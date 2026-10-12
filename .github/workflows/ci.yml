@@ -49,6 +49,12 @@ jobs:
         run: |
           APP=$(find build/mac/Build/Products -maxdepth 2 -name 'Auralis.app' -print -quit)
           test -n "$APP" || { echo "Auralis.app not found"; exit 1; }
+          ARCHS_FOUND=$(lipo -archs "$APP/Contents/MacOS/Auralis")
+          echo "Executable architectures: $ARCHS_FOUND"
+          lipo -info "$APP/Contents/MacOS/Auralis"
+          file "$APP/Contents/MacOS/Auralis"
+          case " $ARCHS_FOUND " in *" x86_64 "*) ;; *) echo "x86_64 slice missing"; exit 1;; esac
+          case " $ARCHS_FOUND " in *" arm64 "*) ;; *) echo "arm64 slice missing"; exit 1;; esac
           ditto -c -k --sequesterRsrc --keepParent "$APP" Auralis-macOS-unsigned.zip
       - name: Upload macOS app
         uses: actions/upload-artifact@v4
