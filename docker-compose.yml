@@ -1,0 +1,14 @@
+# Lyrics backend. Secrets come from ./.env on the host (git-ignored), never from the image.
+services:
+  auralis-backend:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      TRUST_PROXY: "1" # cloudflared sits in front; needed so rate limiting sees the real client address
+    # Loopback only: cloudflared on the same host reaches it, nothing else does.
+    ports: ["127.0.0.1:8787:8787"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]

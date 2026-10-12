@@ -1,0 +1,24 @@
+node_modules
+dist
+coverage
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+playwright-report
+test-results
+.DS_Store
+*.log
+.e2e-dist
+
+# Spartan AI config (contains API keys)
+.spartan/ai.env
+
+# Apple
+apple/*.xcodeproj
+apple/**/Info.plist
+apple/**/*.entitlements
+apple/AuralisKit/.build
+xcuserdata
+DerivedData
+.build

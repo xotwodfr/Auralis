@@ -1,0 +1,10 @@
+node_modules
+dist
+src
+src-tauri
+apple
+tests
+e2e
+.git
+.env
+.env.*
