@@ -32,7 +32,10 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-      - run: xcodebuild -version
+      - name: Check Xcode
+        run: |
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
       - run: brew install xcodegen
       - run: swift test
         working-directory: apple/AuralisKit
@@ -40,7 +43,19 @@ jobs:
         working-directory: apple
       - name: Build macOS app
         working-directory: apple
-        run: xcodebuild build -project Auralis.xcodeproj -scheme AuralisMac -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild build -project Auralis.xcodeproj -scheme AuralisMac -destination 'platform=macOS' -derivedDataPath build/mac CODE_SIGNING_ALLOWED=NO
+      - name: Package macOS app
+        working-directory: apple
+        run: |
+          APP=$(find build/mac/Build/Products -maxdepth 2 -name 'Auralis.app' -print -quit)
+          test -n "$APP" || { echo "Auralis.app not found"; exit 1; }
+          ditto -c -k --sequesterRsrc --keepParent "$APP" Auralis-macOS-unsigned.zip
+      - name: Upload macOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Auralis-macOS-unsigned
+          path: apple/Auralis-macOS-unsigned.zip
+          if-no-files-found: error
       - name: Build iOS app
         working-directory: apple
         run: xcodebuild build -project Auralis.xcodeproj -scheme AuralisiOS -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
