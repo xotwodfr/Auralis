@@ -30,7 +30,7 @@ The backend must list the webview origin in `AURALIS_ALLOWED_ORIGINS`: `http://t
 
 ## Known risks and unknowns
 - CSP is `null` because the Subsonic server, cover art and streams live on arbitrary user-chosen hosts. Your server still needs CORS for the webview origin, exactly as for the browser.
-- An `https://` webview cannot call `http://` servers (mixed content). Windows' WebView2 origin is `http://tauri.localhost`, so plain-http LAN servers are the likeliest to work there; untested.
+- An `https://` webview cannot call `http://` servers (mixed content). The Settings field therefore accepts `http://` only for `localhost`, `127.0.0.1` and `[::1]`; any other backend must use `https://`. A backend must also allow the webview origin in its CORS list, so "Test connection" from the desktop app fails with "Couldn't reach the server" for a backend that does not list `tauri://localhost` / `http://tauri.localhost`, even if it is up; the browser cannot tell CORS from network errors.
 - **Media keys / system media controls:** the web `MediaSession` code exists. Whether WebKitGTK exposes it over MPRIS and WebView2 over SMTC is untested.
 - **Background playback:** HTMLAudio keeps playing in a hidden/minimised window in most webviews, but not verified here. No tray/close-to-background behavior exists.
 - **Audio device selection:** follows the OS default; no in-app picker.

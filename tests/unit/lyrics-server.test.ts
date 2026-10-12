@@ -7,11 +7,12 @@ describe('parseServerUrl', () => {
   it.each([
     ['https://lyrics.folk3s.com', 'https://lyrics.folk3s.com'],
     ['  https://lyrics.folk3s.com/// ', 'https://lyrics.folk3s.com'],
-    ['http://192.168.1.5:8787/', 'http://192.168.1.5:8787'],
+    ['http://localhost:8787/', 'http://localhost:8787'],
+    ['http://127.0.0.1:8787', 'http://127.0.0.1:8787'],
     ['https://example.com/lyrics/', 'https://example.com/lyrics'],
   ])('normalizes %s', (input, out) => expect(parseServerUrl(input)).toBe(out))
 
-  it.each(['', 'lyrics.folk3s.com', 'ftp://x.com', 'file:///etc/passwd', 'javascript:alert(1)', 'tauri://localhost', 'https://u:p@x.com', 'https://x.com/?a=1', 'https://x.com/#f'])(
+  it.each(['', 'lyrics.folk3s.com', 'ftp://x.com', 'http://192.168.1.5:8787', 'http://lyrics.folk3s.com', 'file:///etc/passwd', 'javascript:alert(1)', 'tauri://localhost', 'https://u:p@x.com', 'https://x.com/?a=1', 'https://x.com/#f'])(
     'rejects %j',
     (input) => expect(parseServerUrl(input)).toBeNull(),
   )

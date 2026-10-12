@@ -5,16 +5,25 @@ import { useSettings } from '../state/settings'
 // production builds, then same origin (`npm run dev`, `npm start`). All of these are public addresses, never secrets.
 export const DEFAULT_LYRICS_SERVER: string = import.meta.env.VITE_AURALIS_BACKEND_URL?.replace(/\/+$/, '') ?? (import.meta.env.PROD ? 'https://lyrics.folk3s.com' : '')
 
-/** A normalized http(s) origin + optional path prefix, or null. Rejects other protocols, credentials, queries and fragments. */
-export function parseServerUrl(input: string): string | null {
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
+
+/** A normalized origin + optional path prefix, or a message fit to show the user. https only, except http on this machine. */
+export function checkServerUrl(input: string): { url: string } | { error: string } {
   let u: URL
   try {
     u = new URL(input.trim())
   } catch {
-    return null
+    return { error: 'Enter a full address such as https://lyrics.example.com.' }
   }
-  if ((u.protocol !== 'http:' && u.protocol !== 'https:') || u.username || u.password || u.search || u.hash) return null
-  return `${u.origin}${u.pathname}`.replace(/\/+$/, '')
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return { error: 'The address must start with https:// (or http://localhost for development).' }
+  if (u.protocol === 'http:' && !LOOPBACK.has(u.hostname)) return { error: 'Plain http:// is only allowed for localhost. Use https:// for any other server.' }
+  if (u.username || u.password || u.search || u.hash) return { error: 'Remove the username, password, query and fragment from the address.' }
+  return { url: `${u.origin}${u.pathname}`.replace(/\/+$/, '') }
+}
+
+export const parseServerUrl = (input: string): string | null => {
+  const r = checkServerUrl(input)
+  return 'url' in r ? r.url : null
 }
 
 /** Tauri's webview origin: relative URLs there hit the asset handler, which answers 200 for anything. */

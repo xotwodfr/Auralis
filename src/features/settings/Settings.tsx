@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { clearLyricsCache } from '../../api/lyrics/cache'
 import { clearSpotifyMatches } from '../../api/lyrics/resolve'
 import { ServerCheckError, probeLyricsServer, useLyricsBackend } from '../lyrics/useLyricsBackend'
-import { DEFAULT_LYRICS_SERVER, backendBase, parseServerUrl } from '../../lib/backend'
+import { DEFAULT_LYRICS_SERVER, backendBase, checkServerUrl } from '../../lib/backend'
 import { SHORTCUTS } from '../../app/shortcuts'
 import { paletteStyle, usePalette } from '../../app/artworkTheme'
 import { THEME_OPTIONS, useTheme } from '../../app/theme'
@@ -43,12 +43,13 @@ function LyricsServerForm() {
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
-  /** '' (empty or the default) means "use the default"; null means invalid. */
-  const normalized = () => (draft.trim() === '' ? '' : parseServerUrl(draft))
+  /** An empty field means "use the default". */
+  const normalized = () => (draft.trim() === '' ? { url: '' } : checkServerUrl(draft))
 
   async function test() {
-    const url = normalized()
-    if (url === null) return setResult({ ok: false, text: 'Enter a full http:// or https:// address, without a username, query or fragment.' })
+    const n = normalized()
+    if ('error' in n) return setResult({ ok: false, text: n.error })
+    const url = n.url
     setBusy(true)
     setResult(null)
     try {
@@ -62,8 +63,9 @@ function LyricsServerForm() {
 
   function save(e: FormEvent) {
     e.preventDefault()
-    const url = normalized()
-    if (url === null) return setResult({ ok: false, text: 'Enter a full http:// or https:// address, without a username, query or fragment.' })
+    const n = normalized()
+    if ('error' in n) return setResult({ ok: false, text: n.error })
+    const url = n.url
     setUrl(url === DEFAULT_LYRICS_SERVER ? '' : url)
     setDraft(url || DEFAULT_LYRICS_SERVER)
     setResult({ ok: true, text: 'Saved on this device.' })
@@ -80,7 +82,7 @@ function LyricsServerForm() {
         you play, never your music server address or login. Turn off to stay on your server and LRCLIB.
       </p>
       <label className="field">
-        <span>Lyrics server address</span>
+        <span>Auralis backend URL</span>
         <input
           type="url" inputMode="url" autoCapitalize="off" spellCheck={false} disabled={!on}
           value={draft} placeholder={DEFAULT_LYRICS_SERVER || 'https://lyrics.example.com'}
@@ -90,7 +92,7 @@ function LyricsServerForm() {
       <div className="actions">
         <button className="btn" type="submit" disabled={!on}>Save</button>
         <button className="btn" type="button" disabled={!on || busy} onClick={() => void test()}>{busy ? 'Testing…' : 'Test connection'}</button>
-        <button className="btn" type="button" disabled={!on} onClick={() => (setUrl(''), setDraft(DEFAULT_LYRICS_SERVER), setResult(null))}>Use default</button>
+        <button className="btn" type="button" disabled={!on} onClick={() => (setUrl(''), setDraft(DEFAULT_LYRICS_SERVER), setResult(null))}>Reset to default</button>
       </div>
       {result && <p className="hint" role={result.ok ? 'status' : 'alert'}>{result.text}</p>}
     </form>
