@@ -1,139 +1,69 @@
 import AuralisKit
 import SwiftUI
 
+/// The focal view (src/features/nowplaying): the cover with its soft halo and the track on one side, lyrics on the other.
+/// The persistent player owns playback, so there are no controls here.
 struct NowPlayingView: View {
   @Environment(PlayerModel.self) private var player
-  @State private var showLyrics = false
+  @Environment(\.tokens) private var t
 
   var body: some View {
-    VStack(spacing: 20) {
+    Group {
       if let song = player.current {
-        Picker("View", selection: $showLyrics) {
-          Text("Artwork").tag(false)
-          Text("Lyrics").tag(true)
+        GeometryReader { g in
+          let wide = g.size.width > 720
+          let layout = wide ? AnyLayout(HStackLayout(alignment: .center, spacing: min(96, max(28, g.size.width * 0.05))))
+            : AnyLayout(VStackLayout(spacing: 28))
+          layout {
+            TrackInfo(song: song, artSide: min(440, g.size.height * 0.44, wide ? g.size.width * 0.33 : g.size.width))
+              .frame(maxWidth: wide ? g.size.width * 4 / 11 : .infinity)
+            // Keyed by track so lyrics state never carries over between tracks.
+            LyricsView(song: song).id(song.id)
+              .frame(maxWidth: .infinity, maxHeight: wide ? .infinity : max(360, g.size.height * 0.6))
+          }
+          .frame(maxWidth: 1320, maxHeight: .infinity)
+          .frame(maxWidth: .infinity)
         }
-        .pickerStyle(.segmented)
-        .frame(maxWidth: 260)
-
-        if showLyrics { LyricsView(song: song) } else { CoverArtView(id: song.coverArt, size: 900).frame(maxWidth: 420) }
-
-        VStack(spacing: 4) {
-          Text(song.title).font(.title2.bold()).lineLimit(2)
-          Text(song.artist).foregroundStyle(.secondary)
-        }
-        if let error = player.errorMessage { Text(error).font(.callout).foregroundStyle(.red) }
-        Scrubber()
-        Transport()
+        .padding(.horizontal, Metric.padX)
+        .padding(.vertical, 24)
       } else {
-        ContentUnavailableView("Nothing playing", systemImage: "play.slash", description: Text("Pick an album or playlist to start."))
+        Page(title: "Now Playing") {
+          EmptyState(title: "Nothing playing", hint: "Play a track from your library to see its lyrics here.")
+        }
       }
     }
-    .padding()
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(t.bg)
     .navigationTitle("Now Playing")
   }
 }
 
-private struct Scrubber: View {
-  @Environment(PlayerModel.self) private var player
-  @State private var dragging: Double?
-
-  var body: some View {
-    VStack(spacing: 2) {
-      Slider(
-        value: Binding(get: { dragging ?? player.position }, set: { dragging = $0 }),
-        in: 0...max(player.duration, 1)
-      ) { editing in
-        if !editing, let target = dragging { player.seek(to: target); dragging = nil }
-      }
-      HStack {
-        Text(formatTime(dragging ?? player.position))
-        Spacer()
-        Text(formatTime(player.duration))
-      }
-      .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-    }
-    .frame(maxWidth: 520)
-  }
-}
-
-struct Transport: View {
-  @Environment(PlayerModel.self) private var player
-
-  var body: some View {
-    // One container so adjacent glass buttons render and blend as a single layer.
-    GlassEffectContainer(spacing: 16) {
-      HStack(spacing: 16) {
-        Button { player.toggleShuffle() } label: { Image(systemName: "shuffle") }
-          .buttonStyle(.glass).tint(player.isShuffled ? .accentColor : nil).accessibilityLabel("Shuffle")
-        Button { player.previous() } label: { Image(systemName: "backward.fill") }
-          .buttonStyle(.glass).accessibilityLabel("Previous")
-        Button { player.togglePlay() } label: { Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").frame(width: 32) }
-          .buttonStyle(.glassProminent).controlSize(.large).accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-        Button { player.next() } label: { Image(systemName: "forward.fill") }
-          .buttonStyle(.glass).accessibilityLabel("Next")
-        Button { player.cycleRepeat() } label: {
-          Image(systemName: player.repeatMode == .one ? "repeat.1" : "repeat")
-        }
-        .buttonStyle(.glass).tint(player.repeatMode == .off ? nil : .accentColor).accessibilityLabel("Repeat")
-      }
-    }
-  }
-}
-
-/// Server lyrics only (OpenSubsonic `songLyrics`). LRCLIB and Spicy Lyrics are not ported yet.
-struct LyricsView: View {
-  @Environment(AppModel.self) private var app
-  @Environment(PlayerModel.self) private var player
+private struct TrackInfo: View {
+  @Environment(\.tokens) private var t
   let song: Song
-  @State private var lines: Load<[LyricLine]> = .idle
+  let artSide: CGFloat
 
   var body: some View {
-    Group {
-      switch lines {
-      case .idle, .loading: ProgressView()
-      case .failed(let message): ContentUnavailableView("No lyrics", systemImage: "text.quote", description: Text(message))
-      case .loaded(let lines):
-        if lines.isEmpty {
-          ContentUnavailableView("No lyrics on your server", systemImage: "text.quote")
-        } else {
-          LyricLines(lines: lines)
-        }
+    VStack(spacing: 4) {
+      ZStack {
+        // The cover's own colours as a soft glow behind it.
+        CoverArtView(id: song.coverArt, size: 600, radius: Metric.rCard)
+          .padding(artSide * 0.08)
+          .blur(radius: 44)
+          .saturation(1.4)
+          .opacity(0.38)
+          .scaleEffect(1.06)
+          .offset(y: artSide * 0.08)
+          .accessibilityHidden(true)
+        CoverArtView(id: song.coverArt, size: 600, radius: Metric.rCard)
+          .shadow(color: .black.opacity(t.scheme == .dark ? 0.35 : 0.05), radius: 20, y: 14)
       }
+      .frame(width: artSide, height: artSide)
+      .padding(.bottom, 18)
+      Text(song.title).font(.system(size: 28, weight: .semibold)).kerning(-0.84).multilineTextAlignment(.center).lineLimit(3)
+        .accessibilityAddTraits(.isHeader)
+      Text(song.artist).font(.system(size: 17, weight: .medium)).foregroundStyle(t.text2)
+      if !song.album.isEmpty { Text(song.album).font(.system(size: 15)).foregroundStyle(t.text3) }
     }
-    .task(id: song.id) {
-      guard let client = app.client else { return }
-      lines = .loading
-      do { lines = .loaded(try await client.lyrics(songId: song.id)) } catch { lines = .failed(error.localizedDescription) }
-    }
-  }
-}
-
-private struct LyricLines: View {
-  @Environment(PlayerModel.self) private var player
-  let lines: [LyricLine]
-
-  private var activeIndex: Int? { lines.lastIndex { ($0.start ?? .infinity) <= player.position } }
-
-  var body: some View {
-    ScrollViewReader { proxy in
-      ScrollView {
-        VStack(alignment: .leading, spacing: 14) {
-          ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-            Text(line.text.isEmpty ? "♪" : line.text)
-              .font(.title3.weight(.semibold))
-              .opacity(line.start == nil || index == activeIndex ? 1 : 0.4)
-              .id(index)
-              .onTapGesture { if let t = line.start { player.seek(to: t) } }
-          }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-      }
-      .onChange(of: activeIndex) { _, new in
-        if let new { withAnimation { proxy.scrollTo(new, anchor: .center) } }
-      }
-    }
-    .frame(maxWidth: 520)
+    .multilineTextAlignment(.center)
   }
 }

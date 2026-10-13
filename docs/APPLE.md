@@ -1,6 +1,6 @@
 # Native iOS and macOS apps (SwiftUI, Liquid Glass)
 
-**Status: source only.** Nothing under `apple/` has been compiled with Xcode. Only `AuralisKit` has been built and tested (on Linux, see below). Expect to fix compile errors on the first Xcode build; the SwiftUI layer was written against the iOS/macOS 26 API surface from memory, not against an installed SDK.
+**Status:** CI (`macos-26` runner, `.github/workflows/ci.yml`) builds the macOS app as a universal binary (arm64 + x86_64) and the iOS app, and runs `swift test` for `AuralisKit`. The UI has not been run against a real server from CI; check playback and lyrics by hand on a Mac.
 
 ## What's genuinely Liquid Glass here
 
@@ -8,8 +8,25 @@ Only system APIs, no CSS-style imitation:
 - `TabView` + `Tab(role: .search)` + `.tabBarMinimizeBehavior(.onScrollDown)` + `.tabViewBottomAccessory` (iOS mini player): system tab bar glass.
 - `NavigationSplitView` (macOS sidebar): system floating sidebar.
 - `.buttonStyle(.glass)` / `.glassProminent` and `GlassEffectContainer` (transport controls).
-- `.glassEffect(.regular, in: .capsule)` (macOS player bar).
-- Content (artwork, lists, lyrics) is deliberately not glass.
+- `.glassEffect(.regular, in: .rect(cornerRadius: 22))` (macOS floating player bar), `.glassEffect` on toasts, `.buttonStyle(.glass)` for "Back to current line" over the lyrics, and the system toolbar search field and queue popover.
+- Content (artwork, lists, panels, lyrics) is deliberately not glass: it uses the web's solid theme surfaces.
+
+## macOS ↔ web map
+
+The macOS app follows the web app (the reference) screen for screen. Colours, radii and type sizes come from `src/styles/tokens.css` (`apple/Shared/Theme.swift`), icons are the web's own SVGs (`apple/Shared/Assets.xcassets/Icons`, generated from `src/ui/Icon.tsx`).
+
+| Web | macOS |
+|---|---|
+| Sidebar: Now Playing; Library (Artists, Albums, Recently Added); Yours (Playlists, Favorites, Recent); footer Settings + `user · server` | Same items and groups in the `NavigationSplitView` sidebar; collapse = native sidebar toggle |
+| Toolbar search (`/` focuses) → `/library/search` | Toolbar `.searchable`, 300 ms debounce, `/` or ⌘F focuses |
+| Artist / album / playlist detail, back button | `RoutedStack` detail pages, native back |
+| Album grid card: play + heart on hover; "Added" date on Recently Added | Same, plus a right-click menu |
+| Track row: play from here, heart, More (play next, add to queue, add to playlist / new playlist, favourite, go to album / artist, remove from playlist) | Same actions in the More menu and the right-click menu |
+| Player bar: track, transport, progress, volume, lyrics, queue | Floating glass bar, same three columns; queue in a popover (jump, move, remove, clear) |
+| Now Playing: cover + halo, lyrics (synced, word-synced, follow / back to current line, source + refresh, Spotify link panel) | Same |
+| Settings: Appearance (10 themes incl. Album Artwork), Connection, Playback, Lyrics (external lookups, lyrics server URL with save/test/reset, Spicy status, clear cache, remove Spotify links), Keyboard shortcuts | Same sections and controls; ⌘, opens it |
+| Shortcuts: Space, ←/→, ↑/↓, N/P, /, Esc | Same keys (ignored while typing), plus a Playback menu with ⌘ equivalents |
+| Queue restore after reload | Restored paused after relaunch (per server + user) |
 
 ## Requirements
 - A Mac with **Xcode 26** (needed for the iOS 26 / macOS 26 SDKs and the glass APIs). Check `xcodebuild -version`. Running macOS 26 apps needs macOS 26; a Hackintosh may not be able to run the SDK or Tahoe at all, so check before relying on it.
@@ -45,7 +62,9 @@ open Auralis.xcodeproj
 Nothing in the project needs a paid account today. `DEVELOPMENT_TEAM` in `apple/project.yml` is blank; put a team ID there later.
 
 ## What the native app does not do yet
-Artists / favourites / recent pages, queue screen, LRCLIB and Spicy word-synced lyrics, queue restore after relaunch, themes, playlist editing, iPad-specific layout.
+- Lyrics and Spotify matches are cached in memory only (the web keeps them in IndexedDB), so a relaunch looks them up again.
+- No drag-to-reorder in the queue (move up / down buttons, as on the web).
+- iOS reuses the shared screens in a tab bar; there is no iPad-specific layout.
 
 ## Verified on Linux (not Xcode)
-`AuralisKit` (MD5 token auth against the Subsonic spec vector, URL building, response parsing, error mapping, queue logic, lyrics offset) compiled with Swift 5.10 and passed 14/14 tests, run through a small XCTest stand-in because the Nix Swift package has no XCTest/SwiftPM. The test file itself is standard XCTest for `swift test` on the Mac.
+`AuralisKit` (token auth, URL building, response parsing, error mapping, queue logic, LRC parsing, LRCLIB match guards, Spicy parsing, Spotify matching, artwork palette) compiles with Swift 5.10 and passes its 33 tests, run through a small XCTest stand-in because the Nix Swift package has no XCTest/SwiftPM. The test file itself is standard XCTest for `swift test` on the Mac. SwiftUI code can only be syntax-checked on Linux (`swiftc -parse`).
