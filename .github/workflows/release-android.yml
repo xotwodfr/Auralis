@@ -1,0 +1,69 @@
+name: Release (Android)
+# Pushing a tag like v0.1.0 builds a signed arm64 APK and attaches it to the GitHub release.
+# Run manually with a tag name to (re)build the APK for an existing release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and attach the APK to
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: aarch64-linux-android }
+      - run: npm ci
+      - name: Init Android project
+        run: |
+          export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          npx -y @tauri-apps/cli@2 android init --ci
+          # Release builds disable cleartext by default, but self-hosted music servers are often plain http on the LAN.
+          sed -i 's/\${usesCleartextTraffic}/true/' src-tauri/gen/android/app/src/main/AndroidManifest.xml
+          grep -n usesCleartextTraffic src-tauri/gen/android/app/src/main/AndroidManifest.xml
+      - name: Build APK
+        run: |
+          export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          npx -y @tauri-apps/cli@2 android build --apk --target aarch64 --ci
+      # An unsigned APK cannot be installed. shortcut: a fresh key per build, so updating over an older install needs an uninstall first; store a keystore as a secret to fix.
+      - name: Sign
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          UNSIGNED="$(find src-tauri/gen/android -name '*-unsigned.apk' | head -1)"
+          [ -n "$UNSIGNED" ] || { echo "no unsigned apk found"; exit 1; }
+          keytool -genkeypair -keystore ks.jks -alias auralis -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass auralis-ci -keypass auralis-ci -dname "CN=Auralis"
+          mkdir out
+          OUT="out/Auralis-${TAG#v}-android-arm64.apk"
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" aligned.apk
+          "$BT/apksigner" sign --ks ks.jks --ks-pass pass:auralis-ci --key-pass pass:auralis-ci --out "$OUT" aligned.apk
+          "$BT/apksigner" verify "$OUT"
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Auralis-android
+          path: out/*.apk
+          if-no-files-found: error
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 \
+            && gh release upload "$TAG" out/*.apk --clobber \
+            || gh release create "$TAG" out/*.apk --prerelease --verify-tag --title "Auralis ${TAG#v}" \
+                 --notes "Android arm64 APK (sideload). Your music server must allow CORS for the origin http://tauri.localhost."
