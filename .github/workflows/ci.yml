@@ -43,7 +43,7 @@ jobs:
         working-directory: apple
       - name: Build macOS app
         working-directory: apple
-        run: xcodebuild build -project Auralis.xcodeproj -scheme AuralisMac -destination 'platform=macOS' -derivedDataPath build/mac CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild build -project Auralis.xcodeproj -scheme AuralisMac -destination 'generic/platform=macOS' -derivedDataPath build/mac CODE_SIGNING_ALLOWED=NO
       - name: Package macOS app
         working-directory: apple
         run: |
