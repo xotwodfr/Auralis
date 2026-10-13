@@ -138,10 +138,10 @@ private struct LyricsServerForm: View {
       Hint("Word-synced lyrics and automatic Spotify matching come from a lyrics server. It receives the title, artist and ISRC of tracks you play, never your music server address or login. Turn off to stay on your server and LRCLIB.")
       VStack(alignment: .leading, spacing: 6) {
         Text("Auralis backend URL").font(.meta).foregroundStyle(t.text2)
-        TextField(LyricsServer.defaultURL, text: $draft)
+        // Only the user's typing clears the message; Save normalizing the text must not.
+        TextField(LyricsServer.defaultURL, text: Binding(get: { draft }, set: { draft = $0; result = nil }))
           .textFieldStyle(.roundedBorder)
           .autocorrectionDisabled()
-          .onChange(of: draft) { result = nil }
           .onSubmit(save)
       }
       .disabled(!settings.lyricsServerEnabled)
