@@ -37,13 +37,19 @@ jobs:
           xcodebuild -version
           xcrun --sdk macosx --show-sdk-version
       - run: brew install xcodegen
-      - run: swift test
+      - name: Test AuralisKit
         working-directory: apple/AuralisKit
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee test.log || { grep -E ": error: " test.log | sort -u | head -40 | sed 's/^/::error::/'; exit 1; }
       - run: xcodegen generate
         working-directory: apple
       - name: Build macOS app
         working-directory: apple
-        run: xcodebuild build -project Auralis.xcodeproj -scheme AuralisMac -destination 'generic/platform=macOS' -derivedDataPath build/mac CODE_SIGNING_ALLOWED=NO
+        # Compiler errors become annotations: they are readable on the run page without downloading logs.
+        run: |
+          set -o pipefail
+          xcodebuild build -project Auralis.xcodeproj -scheme AuralisMac -destination 'generic/platform=macOS' -derivedDataPath build/mac CODE_SIGNING_ALLOWED=NO 2>&1 | tee build-mac.log || { grep -E ": error: " build-mac.log | sort -u | head -40 | sed 's/^/::error::/'; exit 1; }
       - name: Package macOS app
         working-directory: apple
         run: |
@@ -64,4 +70,6 @@ jobs:
           if-no-files-found: error
       - name: Build iOS app
         working-directory: apple
-        run: xcodebuild build -project Auralis.xcodeproj -scheme AuralisiOS -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+        run: |
+          set -o pipefail
+          xcodebuild build -project Auralis.xcodeproj -scheme AuralisiOS -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO 2>&1 | tee build-ios.log || { grep -E ": error: " build-ios.log | sort -u | head -40 | sed 's/^/::error::/'; exit 1; }
