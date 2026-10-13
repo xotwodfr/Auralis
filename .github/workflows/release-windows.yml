@@ -1,0 +1,48 @@
+name: Release (Windows)
+# Pushing a tag like v0.1.0 builds the portable Windows exe and publishes it as a GitHub pre-release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm run build
+      # custom-protocol is what `cargo tauri build` enables: without it the exe loads the dev server URL instead of the embedded app.
+      - name: Build portable exe
+        run: cargo build --release --features tauri/custom-protocol
+        working-directory: src-tauri
+      - name: Collect
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ "$GITHUB_REF_TYPE" = tag ] || VERSION="dev"
+          mkdir out
+          cp src-tauri/target/release/auralis-desktop.exe "out/Auralis-${VERSION}-windows-x64-portable.exe"
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Auralis-windows-portable
+          path: out/*.exe
+          if-no-files-found: error
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            && gh release upload "$GITHUB_REF_NAME" out/*.exe --clobber \
+            || gh release create "$GITHUB_REF_NAME" out/*.exe --prerelease --verify-tag \
+                 --title "Auralis ${GITHUB_REF_NAME#v} (first release)" \
+                 --notes "First release: portable Windows build (single .exe, no installer). Needs WebView2 (preinstalled on Windows 11 and current Windows 10). Pre-release: never tested on Windows before this build, so expect rough edges. Your music server must allow CORS for the origin http://tauri.localhost."
