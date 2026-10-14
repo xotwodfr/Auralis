@@ -1873,9 +1873,9 @@ kbd {
     display: none;
   }
   /* Mini-player keeps play + next; the rest lives on Now Playing. */
-  .transport > :nth-child(1),
-  .transport > :nth-child(2),
-  .transport > :nth-child(5),
+  .player .transport > :nth-child(1),
+  .player .transport > :nth-child(2),
+  .player .transport > :nth-child(5),
   .progress__time,
   .progress .slider,
   .player__right > a.icon-btn {

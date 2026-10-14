@@ -7,6 +7,7 @@ import { DEFAULT_LYRICS_SERVER, backendBase, checkServerUrl } from '../../lib/ba
 import { SHORTCUTS } from '../../app/shortcuts'
 import { paletteStyle, usePalette } from '../../app/artworkTheme'
 import { THEME_OPTIONS, useTheme } from '../../app/theme'
+import { IS_MOBILE_APP } from '../../app/platform'
 import { useAuth } from '../../state/auth'
 import { useSettings } from '../../state/settings'
 import { useSpotifyLinks } from '../../state/spotifyLinks'
@@ -160,7 +161,7 @@ export default function Settings() {
     <section className="page">
       <h1 className="page__title">Settings</h1>
 
-      <section className="panel" aria-labelledby="appearance">
+      {!IS_MOBILE_APP && <section className="panel" aria-labelledby="appearance">
         <h2 id="appearance" className="panel__title">
           Appearance
         </h2>
@@ -189,7 +190,7 @@ export default function Settings() {
             Colours follow the cover of the playing track. If your server blocks cross-origin image reads, the default palette is used.
           </p>
         )}
-      </section>
+      </section>}
 
       <section className="panel" aria-labelledby="connection">
         <h2 id="connection" className="panel__title">
@@ -268,7 +269,7 @@ export default function Settings() {
         </div>
       </section>
 
-      <section className="panel" aria-labelledby="shortcuts">
+      {!IS_MOBILE_APP && <section className="panel" aria-labelledby="shortcuts">
         <h2 id="shortcuts" className="panel__title">
           Keyboard shortcuts
         </h2>
@@ -282,7 +283,7 @@ export default function Settings() {
             </div>
           ))}
         </dl>
-      </section>
+      </section>}
 
       {pending && dialog && (
         <ConfirmDialog

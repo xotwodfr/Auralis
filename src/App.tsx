@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 import Connect from './features/connect/Connect'
 import Shell from './app/Shell'
@@ -10,6 +10,10 @@ import { useAuth } from './state/auth'
 import { useSettings } from './state/settings'
 import { useSpotifyLinks } from './state/spotifyLinks'
 import { usePlayback } from './state/playback'
+import { IS_MOBILE_APP } from './app/platform'
+
+// Loaded only inside the Android app, so the web bundle doesn't carry the phone UI.
+const MobileApp = lazy(() => import('./mobile/MobileApp'))
 
 function RequireSession({ children }: { children: ReactNode }) {
   const signedIn = useAuth((s) => s.session !== null)
@@ -32,6 +36,14 @@ export default function App() {
   }, [signedIn])
 
   if (!hydrated) return null
+
+  if (IS_MOBILE_APP) {
+    return (
+      <Suspense fallback={null}>
+        <MobileApp signedIn={signedIn} />
+      </Suspense>
+    )
+  }
 
   return (
     <Routes>
