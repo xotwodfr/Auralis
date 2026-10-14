@@ -38,6 +38,19 @@ function Seek({ remaining = false }: { remaining?: boolean }) {
   )
 }
 
+/** Phones held sideways: the player becomes cover | lyrics. */
+function useLandscape() {
+  const query = '(orientation: landscape) and (max-height: 540px)'
+  const [on, setOn] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const update = () => setOn(mq.matches)
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  return on
+}
+
 /** Full-screen Now Playing, opened over the current page (MobileApp renders it as a modal route). */
 export default function Player() {
   const navigate = useNavigate()
@@ -54,6 +67,7 @@ export default function Player() {
   const closeButton = useRef<HTMLButtonElement>(null)
   // The mini-player's lyrics button opens straight into the fullscreen lyrics.
   const [lyricsOpen, setLyricsOpen] = useState((useLocation().state as { lyrics?: boolean } | null)?.lyrics === true)
+  const landscape = useLandscape()
   const close = () => (history.length > 1 ? navigate(-1) : navigate('/home', { replace: true }))
 
   useEffect(() => {
@@ -81,6 +95,49 @@ export default function Player() {
       onRepeat={s.cycleRepeat}
     />
   )
+  const lyricsTrack = track && { id: track.id, title: track.title, artist: track.artist, album: track.album, duration: track.duration, isrc: track.isrc, explicit: track.explicit }
+  if (landscape && track && lyricsTrack) {
+    return (
+      <div className="m-player m-player--land" role="dialog" aria-modal="true" aria-label="Now Playing" style={tintStyle(tint)}>
+        <Backdrop />
+        <div className="m-land">
+          <div className="m-land__side">
+            <div className="m-land__top">
+              <button ref={closeButton} type="button" className="m-round m-round--plain" aria-label="Close player" onClick={close}>
+                <Icon name="down" size={24} />
+              </button>
+              <span className="m-land__gap" />
+              <button type="button" className="m-round m-round--plain" aria-label="Queue" onClick={() => setQueueOpen(true)}>
+                <Icon name="queue" size={22} />
+              </button>
+              <button type="button" className="m-round m-round--plain" aria-label={`More actions for ${track.title}`} onClick={() => setMenuOpen(true)}>
+                <Icon name="more" size={22} />
+              </button>
+            </div>
+            <div className="m-land__info">
+              <div className="m-land__art">
+                <Cover id={track.coverArt} size={400} />
+              </div>
+              <div className="m-text">
+                <p className="m-land__album">{track.album}</p>
+                <p className="m-land__artist">{track.artist}</p>
+              </div>
+            </div>
+            <div className="m-land__controls">
+              <Seek remaining />
+              {transport}
+            </div>
+          </div>
+          <div className="m-lyricsfull__body">
+            <LyricsView key={track.id} track={lyricsTrack} />
+            <KaraokeButton className="m-round m-round--glass" size={22} />
+          </div>
+        </div>
+        {menuOpen && <TrackActions song={track} index={s.queue.index} starred={isStarred(ids, 'song', track.id)} onClose={() => setMenuOpen(false)} />}
+        {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
+      </div>
+    )
+  }
   return (
     <div className="m-player" role="dialog" aria-modal="true" aria-label="Now Playing" style={tintStyle(tint)}>
       <Backdrop />

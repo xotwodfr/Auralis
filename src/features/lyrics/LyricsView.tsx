@@ -231,9 +231,10 @@ function SyncedLines({ lines, footer }: { lines: LyricLine[]; footer: ReactNode 
 /** The provider name is always shown; community syncs also credit and link uploader and maker (API terms §6). */
 function Source({ lyrics, onRefresh }: { lyrics: Lyrics; onRefresh: () => void }) {
   const a = lyrics.attribution
+  const show = useSettings((s) => s.showLyricSource)
   return (
     <p className="lyrics__source">
-      {lyrics.source === 'spicy' && a ? (
+      {!show ? null : lyrics.source === 'spicy' && a ? (
         <>
           Lyrics from {a.provider} (via Spicy Lyrics)
           {a.credits.map((c) => (
@@ -253,7 +254,7 @@ function Source({ lyrics, onRefresh }: { lyrics: Lyrics; onRefresh: () => void }
       ) : (
         <>Lyrics from {SOURCES[lyrics.source as keyof typeof SOURCES]}</>
       )}
-      {' · '}
+      {show && ' · '}
       <button type="button" className="link-btn" onClick={onRefresh}>
         Refresh
       </button>

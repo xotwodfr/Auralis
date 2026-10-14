@@ -90,7 +90,7 @@ describe('lyrics settings', () => {
     expect(box).toBeChecked()
     fireEvent.click(box)
     expect(useSettings.getState().externalLookups).toBe(false)
-    await waitFor(async () => expect(await kvGet('settings')).toEqual({ externalLookups: false, reportPlays: true, lyricsServerEnabled: true, lyricsServerUrl: '', streamQuality: 'high', adaptiveColors: true, lyricsWordSync: true, lyricSize: 'medium', crossfadeSeconds: 0, eqEnabled: false, eqGains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }))
+    await waitFor(async () => expect(await kvGet('settings')).toEqual({ externalLookups: false, reportPlays: true, lyricsServerEnabled: true, lyricsServerUrl: '', streamQuality: 'high', adaptiveColors: true, lyricsWordSync: true, lyricSize: 'medium', showLyricSource: true, crossfadeSeconds: 0, eqEnabled: false, eqGains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }))
   })
 
   it('clears cached lyrics', async () => {

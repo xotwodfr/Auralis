@@ -1058,23 +1058,23 @@
   min-height: 0;
 }
 
-.m-lyricsfull .lyric__btn {
+:is(.m-lyricsfull, .m-land) .lyric__btn {
   font-size: 1.75rem;
 }
 
 /* Lines other than the one being sung are out of focus. */
-.m-lyricsfull .lyric:not(.lyric--active) .lyric__btn {
+:is(.m-lyricsfull, .m-land) .lyric:not(.lyric--active) .lyric__btn {
   filter: blur(1.5px);
   opacity: 0.55;
 }
 
 /* Source credit stays (provider attribution); the follow switch and match picker live in the inline card. */
-.m-lyricsfull .lyrics-follow,
-.m-lyricsfull .spicy {
+:is(.m-lyricsfull, .m-land) .lyrics-follow,
+:is(.m-lyricsfull, .m-land) .spicy {
   display: none;
 }
 
-.m-lyricsfull .lyrics-stage__footer {
+:is(.m-lyricsfull, .m-land) .lyrics-stage__footer {
   min-height: 0;
   padding: 0 8px;
   font-size: 0.6875rem;
@@ -1128,6 +1128,79 @@
 
 .m-lyricsfull__tabs .icon-btn[aria-pressed='true'] {
   color: var(--accent);
+}
+
+/* Sideways phone: cover and info top-left, controls bottom-left, lyrics across the whole right half. */
+.m-player--land {
+  padding: calc(var(--m-top-pad) + 4px) max(env(safe-area-inset-right, 0px), 20px) max(env(safe-area-inset-bottom, 0px), 8px) max(env(safe-area-inset-left, 0px), 20px);
+  overflow: hidden;
+}
+
+.m-land {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 24px;
+  min-height: 0;
+}
+
+.m-land__side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.m-land__top {
+  display: flex;
+  align-items: center;
+  margin: 0 -8px;
+}
+
+.m-land__gap {
+  flex: 1;
+}
+
+.m-land__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.m-land__art {
+  flex: 0 1 auto;
+  width: min(100%, 34vh);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.m-land__art .artwork {
+  border-radius: 6px;
+}
+
+.m-land__album,
+.m-land__artist {
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.m-land__album {
+  font-weight: 700;
+}
+
+.m-land__artist {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.m-land__controls .transport .icon-btn--main {
+  width: 56px;
+  height: 56px;
+}
+
+.m-land .m-lyricsfull__body {
+  margin: 0;
 }
 
 /* Queue: a full-screen sheet over the player. */
@@ -1523,4 +1596,8 @@
 
 .m-set__block > .slider {
   width: calc(100% - 32px);
+}
+
+.m-land__info .m-text {
+  flex: none;
 }

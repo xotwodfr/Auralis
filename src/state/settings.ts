@@ -36,6 +36,8 @@ interface SettingsState {
   /** Highlight lyrics word by word when the lyrics carry word timing; off = whole lines only. */
   lyricsWordSync: boolean
   lyricSize: LyricSize
+  /** Show who the lyrics came from and who uploaded/made them under the lyrics. */
+  showLyricSource: boolean
   /** Seconds the end of a track overlaps the start of the next; 0 = off. */
   crossfadeSeconds: number
   eqEnabled: boolean
@@ -51,6 +53,7 @@ interface SettingsState {
   setAdaptiveColors: (on: boolean) => void
   setLyricsWordSync: (on: boolean) => void
   setLyricSize: (size: LyricSize) => void
+  setShowLyricSource: (on: boolean) => void
   setCrossfadeSeconds: (s: number) => void
   setEqEnabled: (on: boolean) => void
   setEqGains: (gains: number[]) => void
@@ -67,6 +70,7 @@ const persist = (s: SettingsState) =>
     adaptiveColors: s.adaptiveColors,
     lyricsWordSync: s.lyricsWordSync,
     lyricSize: s.lyricSize,
+    showLyricSource: s.showLyricSource,
     crossfadeSeconds: s.crossfadeSeconds,
     eqEnabled: s.eqEnabled,
     eqGains: s.eqGains,
@@ -81,6 +85,7 @@ export const useSettings = create<SettingsState>()((set, get) => ({
   adaptiveColors: true,
   lyricsWordSync: true,
   lyricSize: 'medium',
+  showLyricSource: true,
   crossfadeSeconds: 0,
   eqEnabled: false,
   eqGains: FLAT_EQ,
@@ -113,6 +118,10 @@ export const useSettings = create<SettingsState>()((set, get) => ({
     set({ lyricsWordSync: on })
     void persist(get())
   },
+  setShowLyricSource(on) {
+    set({ showLyricSource: on })
+    void persist(get())
+  },
   setLyricSize(size) {
     set({ lyricSize: size })
     void persist(get())
@@ -139,6 +148,7 @@ export const useSettings = create<SettingsState>()((set, get) => ({
       if (isQuality(saved?.streamQuality)) set({ streamQuality: saved.streamQuality })
       if (typeof saved?.adaptiveColors === 'boolean') set({ adaptiveColors: saved.adaptiveColors })
       if (typeof saved?.lyricsWordSync === 'boolean') set({ lyricsWordSync: saved.lyricsWordSync })
+      if (typeof saved?.showLyricSource === 'boolean') set({ showLyricSource: saved.showLyricSource })
       if (isSize(saved?.lyricSize)) set({ lyricSize: saved.lyricSize })
       if (typeof saved?.crossfadeSeconds === 'number') set({ crossfadeSeconds: Math.min(MAX_CROSSFADE_S, Math.max(0, saved.crossfadeSeconds)) })
       if (typeof saved?.eqEnabled === 'boolean') set({ eqEnabled: saved.eqEnabled })

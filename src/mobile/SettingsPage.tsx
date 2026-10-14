@@ -173,6 +173,9 @@ export default function SettingsPage() {
         <Row icon="lyrics" label="Word-synced lyrics" hint="Highlight each word as it is sung, when available">
           <Switch label="Word-synced lyrics" checked={settings.lyricsWordSync} onChange={settings.setLyricsWordSync} />
         </Row>
+        <Row icon="lyrics" label="Show lyrics source" hint="Where the lyrics came from and who made them">
+          <Switch label="Show lyrics source" checked={settings.showLyricSource} onChange={settings.setShowLyricSource} />
+        </Row>
         <div className="m-set__block">
           <Row icon="lyrics" label="Lyrics size" />
           <SegmentedControl label="Lyrics size" value={settings.lyricSize} onChange={settings.setLyricSize} options={SIZES} />
