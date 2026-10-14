@@ -1256,7 +1256,7 @@ a.icon-btn[aria-current='page'] {
   -webkit-background-clip: text;
   background-clip: text;
   /* Sung syllables rise a hair as they start: a transform, so nothing reflows. */
-  transition: transform 0.6s var(--ease-out-quart);
+  transition: transform 0.6s var(--ease-out-quart), filter 0.6s var(--ease-out-quart);
 }
 
 .lyric--active .syl {
@@ -1267,6 +1267,21 @@ a.icon-btn[aria-current='page'] {
 .lyric--active .syl.is-active,
 .lyric--active .syl.is-done {
   transform: none;
+}
+
+/* The syllable being sung lifts and glows, then settles as it finishes. filter, not text-shadow: the text is clipped
+   from the gradient, so a shadow would draw underneath it. */
+.lyric--active .syl.is-active {
+  transform: translateY(-0.07em) scale(1.04);
+  filter: drop-shadow(0 0 0.35em color-mix(in srgb, var(--on) 55%, transparent));
+  transition-duration: 0.18s, 0.18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lyric--active .syl.is-active {
+    transform: none;
+    filter: none;
+  }
 }
 
 @media (forced-colors: active) {
