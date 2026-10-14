@@ -761,6 +761,8 @@ a.row:hover {
 
 .player__track {
   display: flex;
+  color: inherit;
+  text-decoration: none;
   align-items: center;
   gap: 12px;
   min-width: 0;
@@ -875,6 +877,10 @@ a.icon-btn[aria-current='page'] {
   gap: 10px;
   width: 100%;
   max-width: 640px;
+}
+
+.progress__line {
+  display: none;
 }
 
 .progress__time {
@@ -1819,4 +1825,84 @@ kbd {
   display: grid;
   gap: 10px;
   max-width: 520px;
+}
+
+/* Phone: Spotify / Apple Music layout. A floating mini-player sits above a fixed bottom tab bar; tapping it opens Now Playing. */
+@media (max-width: 720px) {
+  .app {
+    --nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
+    --mini-h: 64px;
+    /* Everything fixed at the bottom, so content, queue and toasts clear both bars. */
+    --player-h: calc(var(--mini-h) + var(--nav-h) + 16px);
+  }
+  .sidebar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: var(--nav-h);
+    padding: 4px 8px env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid var(--hairline);
+    border-bottom: 0;
+  }
+  .player {
+    right: 8px;
+    bottom: calc(var(--nav-h) + 8px);
+    left: 8px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: 'track center right';
+    gap: 0 4px;
+    min-height: 0;
+    height: var(--mini-h);
+    padding: 8px 4px 8px 8px;
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-thumb);
+    box-shadow: var(--sh-card);
+  }
+  .player__art {
+    width: 48px;
+  }
+  .player__title {
+    font-size: 0.875rem;
+  }
+  .player__artist {
+    font-size: 0.75rem;
+  }
+  .player__status {
+    display: none;
+  }
+  /* Mini-player keeps play + next; the rest lives on Now Playing. */
+  .transport > :nth-child(1),
+  .transport > :nth-child(2),
+  .transport > :nth-child(5),
+  .progress__time,
+  .progress .slider,
+  .player__right > a.icon-btn {
+    display: none;
+  }
+  .player__center {
+    display: flex;
+  }
+  .player__right {
+    gap: 0;
+  }
+  .progress {
+    position: absolute;
+    right: 8px;
+    bottom: 0;
+    left: 8px;
+    display: block;
+    width: auto;
+    height: 2px;
+    background: var(--hover);
+  }
+  .progress__line {
+    display: block;
+    height: 100%;
+    background: var(--text);
+  }
+  .player__error {
+    display: none;
+  }
 }

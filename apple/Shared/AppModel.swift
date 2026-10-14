@@ -64,14 +64,15 @@ final class AppModel {
       let info = try await candidate.serverInfo()
       // Plain Subsonic servers answer this with an error; that only means "no extensions".
       let extensions = info.openSubsonic ? ((try? await candidate.openSubsonicExtensions()) ?? []) : []
+      var stored = remember
       if remember && saveCredentials {
         defaults.set(base.absoluteString, forKey: Self.serverKey)
         defaults.set(username, forKey: Self.userKey)
-        Keychain.save(password, account: "\(username)@\(base.absoluteString)")
+        stored = Keychain.save(password, account: "\(username)@\(base.absoluteString)")
       }
       self.server = info
       songLyrics = extensions.contains("songLyrics")
-      self.remember = remember
+      self.remember = stored
       client = candidate
       await reloadStarred()
     } catch {

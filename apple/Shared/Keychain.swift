@@ -9,11 +9,13 @@ enum Keychain {
     [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: account]
   }
 
-  static func save(_ password: String, account: String) {
+  /// False when the Keychain refused the write, so the caller doesn't claim the device is remembered.
+  @discardableResult
+  static func save(_ password: String, account: String) -> Bool {
     SecItemDelete(query(account) as CFDictionary)
     var item = query(account)
     item[kSecValueData as String] = Data(password.utf8)
-    SecItemAdd(item as CFDictionary, nil)
+    return SecItemAdd(item as CFDictionary, nil) == errSecSuccess
   }
 
   static func load(account: String) -> String? {

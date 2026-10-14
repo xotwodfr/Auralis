@@ -212,7 +212,12 @@ export function createSpicyHandler(options = {}) {
     const m = /^\/api\/spicy\/lyrics\/([^/]*)$/.exec(url.pathname)
     if (!m) return send(res, 404, { error: 'not_found' }), true
     if (!enabled) return send(res, 503, { error: 'not_configured' }), true
-    const id = decodeURIComponent(m[1])
+    let id
+    try {
+      id = decodeURIComponent(m[1])
+    } catch {
+      return send(res, 400, { error: 'invalid_track_id' }), true
+    }
     if (!TRACK_ID.test(id)) return send(res, 400, { error: 'invalid_track_id' }), true
     if (url.search) return send(res, 400, { error: 'unexpected_query' }), true
 
