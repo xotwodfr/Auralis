@@ -1,5 +1,5 @@
-import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { activeLine } from '../../api/lyrics/lrc'
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { activeLine, lineEnd, withGaps } from '../../api/lyrics/lrc'
 import type { MatchOutcome } from '../../api/lyrics/resolve'
 import type { SpotifyCandidate } from '../../api/lyrics/spotifyMatch'
 import { LyricsError, type LyricLine, type LyricWord, type Lyrics, type LyricsTrack } from '../../api/lyrics/types'
@@ -15,6 +15,10 @@ const SOURCES = { server: 'your server', lrclib: 'LRCLIB' } as const
 /** Where the active line settles, as a fraction of the lyrics viewport from the top. */
 const FOCUS = 0.32
 const SCROLL_MS = 700
+/** The next line becomes current this early (once the previous one is sung), so it has arrived when its first word starts. */
+const LEAD_S = 0.35
+/** After a manual scroll, following resumes on its own once the user has left the lyrics alone this long. */
+const RESUME_MS = 5000
 const easeOutQuart = (k: number) => 1 - (1 - k) ** 4
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
@@ -50,8 +54,16 @@ type LineState = 'past' | 'active' | 'next'
 const Line = memo(function Line({ line, index, state, onSeek }: { line: LyricLine; index: number; state: LineState; onSeek: (i: number) => void }) {
   const wordSync = useSettings((s) => s.lyricsWordSync)
   if (!line.text) {
-    // An instrumental gap in LRC: a quiet marker while it is "sung", nothing otherwise.
-    return <li data-line={index} aria-hidden className={`lyric lyric--gap lyric--${state}`} />
+    // An instrumental gap: three dots that fill across the pause while it is current, nothing otherwise.
+    return (
+      <li data-line={index} aria-hidden className={`lyric lyric--gap lyric--${state}${line.words ? ' lyric--dots' : ''}`}>
+        {line.words?.map((d, j) => (
+          <span key={j} className="syl" data-start={d.start} data-end={d.end}>
+            {d.text}
+          </span>
+        ))}
+      </li>
+    )
   }
   return (
     <li data-line={index} className={`lyric lyric--${state}${line.opposite ? ' lyric--opposite' : ''}${line.words && wordSync ? ' lyric--timed' : ''}`}>
@@ -79,10 +91,20 @@ interface Syllable {
  * Synced lyrics driven by the audio clock. Line changes go through React (a few times a minute); syllable progress is
  * painted imperatively every animation frame while playing, writing a style only for the syllable being sung.
  */
-function SyncedLines({ lines, footer }: { lines: LyricLine[]; footer: ReactNode }) {
+function SyncedLines({ lines: source, footer }: { lines: LyricLine[]; footer: ReactNode }) {
   const seek = usePlayback((s) => s.seek)
   const box = useRef<HTMLDivElement>(null)
-  const [active, setActive] = useState(() => activeLine(lines, playbackTime()))
+  const lines = useMemo(() => withGaps(source), [source])
+  const ends = useMemo(() => lines.map(lineEnd), [lines])
+  // Lead in to the next line only once the previous one has finished, so a held last word is never cut short.
+  const current = useCallback(
+    (t: number) => {
+      const i = activeLine(lines, t + LEAD_S)
+      return i > 0 && lines[i]!.time! > t && ends[i - 1]! > t ? i - 1 : i
+    },
+    [lines, ends],
+  )
+  const [active, setActive] = useState(() => current(playbackTime()))
   const activeRef = useRef(active)
   const syllables = useRef<Syllable[]>([])
   const [follow, setFollow] = useState(true)
@@ -106,7 +128,7 @@ function SyncedLines({ lines, footer }: { lines: LyricLine[]; footer: ReactNode 
     let raf = 0
     const update = () => {
       const t = playbackTime()
-      const idx = activeLine(lines, t)
+      const idx = current(t)
       if (idx !== activeRef.current) {
         activeRef.current = idx
         setActive(idx) // the layout effect below re-targets the painter before the next paint
@@ -128,7 +150,7 @@ function SyncedLines({ lines, footer }: { lines: LyricLine[]; footer: ReactNode 
       unsubscribe()
       cancelAnimationFrame(raf)
     }
-  }, [lines, paint])
+  }, [current, paint])
 
   const scrollToActive = useCallback((instant: boolean) => {
     const c = box.current
@@ -179,15 +201,29 @@ function SyncedLines({ lines, footer }: { lines: LyricLine[]; footer: ReactNode 
     return () => ro.disconnect()
   }, [scrollToActive])
 
-  useEffect(() => () => cancelAnimationFrame(tween.current), [])
+  const resume = useRef(0)
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(tween.current)
+      clearTimeout(resume.current)
+    },
+    [],
+  )
 
   // Wheel, touch, scroll keys and the scrollbar are the user scrolling; our own scrolling fires none of these.
   const manual = () => {
     cancelAnimationFrame(tween.current)
     setFollow(false)
+    clearTimeout(resume.current)
+    resume.current = window.setTimeout(() => setFollow(true), RESUME_MS)
+  }
+  const setFollowing = (on: boolean) => {
+    clearTimeout(resume.current)
+    setFollow(on)
   }
   const onSeek = useCallback(
     (i: number) => {
+      clearTimeout(resume.current)
       seek(lines[i]!.time!)
       setFollow(true)
     },
@@ -214,13 +250,13 @@ function SyncedLines({ lines, footer }: { lines: LyricLine[]; footer: ReactNode 
         </ol>
       </div>
       {!follow && active >= 0 && (
-        <button type="button" className="lyrics-resume glass-overlay" onClick={() => setFollow(true)}>
+        <button type="button" className="lyrics-resume glass-overlay" onClick={() => setFollowing(true)}>
           Back to current line
         </button>
       )}
       <div className="lyrics-stage__footer">
         {footer}
-        <button type="button" className="lyrics-follow" aria-pressed={follow} onClick={() => setFollow((f) => !f)}>
+        <button type="button" className="lyrics-follow" aria-pressed={follow} onClick={() => setFollowing(!follow)}>
           Follow playback
         </button>
       </div>
@@ -231,9 +267,10 @@ function SyncedLines({ lines, footer }: { lines: LyricLine[]; footer: ReactNode 
 /** The provider name is always shown; community syncs also credit and link uploader and maker (API terms §6). */
 function Source({ lyrics, onRefresh }: { lyrics: Lyrics; onRefresh: () => void }) {
   const a = lyrics.attribution
+  const show = useSettings((s) => s.showLyricSource)
   return (
     <p className="lyrics__source">
-      {lyrics.source === 'spicy' && a ? (
+      {!show ? null : lyrics.source === 'spicy' && a ? (
         <>
           Lyrics from {a.provider} (via Spicy Lyrics)
           {a.credits.map((c) => (
@@ -253,7 +290,7 @@ function Source({ lyrics, onRefresh }: { lyrics: Lyrics; onRefresh: () => void }
       ) : (
         <>Lyrics from {SOURCES[lyrics.source as keyof typeof SOURCES]}</>
       )}
-      {' · '}
+      {show && ' · '}
       <button type="button" className="link-btn" onClick={onRefresh}>
         Refresh
       </button>

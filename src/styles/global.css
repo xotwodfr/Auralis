@@ -161,18 +161,72 @@ textarea {
   border: 1px solid var(--hairline);
   border-radius: var(--r-pill);
   cursor: pointer;
-  transition: opacity 0.2s var(--ease-out-quart);
+  transition: opacity 0.2s var(--ease-out-quart), transform var(--press-out) var(--ease-spring);
 }
 
 .btn:hover:not(:disabled) {
   opacity: 0.8;
 }
 
-/* Pointer-down feedback shared by all buttons. */
+/* Pointer-down feedback shared by all buttons: presses in quickly, springs back on release. */
 .btn:active:not(:disabled),
 .icon-btn:active:not(:disabled),
 .segmented__item:active {
   transform: scale(0.97);
+}
+
+.btn:active:not(:disabled) {
+  transition-duration: 0.2s, var(--press-in);
+}
+
+.icon-btn:active:not(:disabled) {
+  transform: scale(0.9);
+  transition-duration: 0.2s, 0.2s, var(--press-in);
+}
+
+/* An icon that changed (play/pause, favorite, repeat) pops in; see SwapIcon. */
+.swap-icon {
+  display: grid;
+  place-items: center;
+}
+
+.swap-icon--new {
+  animation: swap-icon 0.28s var(--ease-spring);
+}
+
+@keyframes swap-icon {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* Waiting for audio: a thin ring around the play button, shown only if the wait is noticeable. */
+.icon-btn--main {
+  position: relative;
+}
+
+.icon-btn--main[aria-busy='true']::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 2px solid transparent;
+  border-top-color: var(--text);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: busy-spin 0.9s linear infinite, busy-in 0.2s 0.4s both;
+}
+
+@keyframes busy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes busy-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .btn:disabled {
@@ -829,7 +883,7 @@ a.row:hover {
 .icon-btn {
   display: inline-grid;
   text-decoration: none;
-  transition: background-color 0.2s var(--ease-out-quart), color 0.2s var(--ease-out-quart), transform 0.2s var(--ease-out-quart);
+  transition: background-color 0.2s var(--ease-out-quart), color 0.2s var(--ease-out-quart), transform var(--press-out) var(--ease-spring);
   flex: none;
   place-items: center;
   width: 44px;
@@ -1108,7 +1162,6 @@ a.icon-btn[aria-current='page'] {
    lyric transition shares one easing and a small set of durations. */
 .nowplaying {
   --np-h: max(360px, calc(100dvh - 64px - var(--player-h) - 48px)); /* viewport minus toolbar, player, padding */
-  --lyric-move: 0.5s var(--ease-out-quart);
   display: grid;
   grid-template-columns: minmax(220px, 4fr) minmax(0, 7fr);
   gap: clamp(28px, 5vw, 96px);
@@ -1286,6 +1339,33 @@ a.icon-btn[aria-current='page'] {
   background-clip: text;
   /* Sung syllables rise a hair as they start: a transform, so nothing reflows. */
   transition: transform 0.6s var(--ease-out-quart), filter 0.6s var(--ease-out-quart);
+}
+
+/* A pause between lines: three dots that fill one after another, timed like words by the painter. They keep their
+   slot whether shown or not, so the lines around them never move. */
+.lyric--dots {
+  --on: var(--text);
+  --off: color-mix(in srgb, var(--text) 30%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  height: 2rem;
+  padding-inline: 12px;
+  font-size: 1.375rem;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.8);
+  transform-origin: 12px 50%;
+  transition: opacity var(--lyric-move), transform var(--lyric-move);
+}
+
+.lyric--dots::before {
+  content: none;
+}
+
+.lyric--dots.lyric--active {
+  opacity: 1;
+  transform: none;
 }
 
 .lyric--active .syl {
@@ -1600,7 +1680,7 @@ html.theme-changing :not(.glass-nav):not(.glass-overlay):not(.glass-chip) {
   border: 0;
   border-radius: var(--r-pill);
   cursor: pointer;
-  transition: background-color 0.2s var(--ease-out-quart), color 0.2s var(--ease-out-quart);
+  transition: background-color 0.2s var(--ease-out-quart), color 0.2s var(--ease-out-quart), transform var(--press-out) var(--ease-spring);
 }
 
 .segmented__item[aria-checked='true'] {

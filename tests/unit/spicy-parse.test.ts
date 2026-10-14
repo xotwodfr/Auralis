@@ -59,6 +59,11 @@ describe('parseSpicy', () => {
     ['unknown type', { Type: 'Hologram', Content: [{ Type: 'Vocal', Lead: lead(syl('x', 1, 2)) }] }],
   ])('returns null for %s', (_, b) => expect(parseSpicy(b, 100)).toBeNull())
 
+  it('keeps a syllable that lacks timing, timed from its neighbours', () => {
+    const b = body({ Content: [{ Type: 'Vocal', Lead: { StartTime: 1, EndTime: 3, Syllables: [syl('a', 1, 2), { Text: 'b' }] } }] })
+    expect(parseSpicy(b, 100)!.lines[0]).toMatchObject({ text: 'a b', words: [{ text: 'a', start: 1, end: 2 }, { text: 'b', start: 2, end: 3 }] })
+  })
+
   it('rejects lyrics that run past the track (wrong recording), with a small tolerance', () => {
     const b = body({ Content: [{ Type: 'Vocal', Lead: lead(syl('x', 10, 205)) }] })
     expect(parseSpicy(b, 200)).not.toBeNull() // 5 s over: fine

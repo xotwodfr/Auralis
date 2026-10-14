@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const PATHS = {
   play: <path d="M7 4.5v15l12-7.5z" fill="currentColor" />,
   pause: (
@@ -47,6 +49,19 @@ const PATHS = {
 } as const
 
 export type IconName = keyof typeof PATHS
+
+/**
+ * An icon that pops in when it changes (play/pause, favorite, repeat), never on mount, so lists of buttons stay still.
+ */
+export function SwapIcon({ name, size }: { name: IconName; size?: number }) {
+  const [seen, setSeen] = useState({ name, changed: false })
+  if (seen.name !== name) setSeen({ name, changed: true })
+  return (
+    <span key={name} className={seen.changed ? 'swap-icon swap-icon--new' : 'swap-icon'}>
+      <Icon name={name} size={size} />
+    </span>
+  )
+}
 
 /** Line icons on a 24 grid, `currentColor`. Decorative: the parent button carries the label. */
 export function Icon({ name, size = 22 }: { name: IconName; size?: number }) {

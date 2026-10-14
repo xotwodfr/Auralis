@@ -2,7 +2,7 @@ import { currentEntry } from '../audio/queue'
 import { Cover, StarButton } from '../features/library/components'
 import { isStarred, useStarred } from '../features/library/starred'
 import { usePlayback } from '../state/playback'
-import { Icon } from '../ui/Icon'
+import { Icon, SwapIcon } from '../ui/Icon'
 import { tintStyle, useCoverTint, useOpenPlayer } from './parts'
 
 /** Re-renders on every playhead tick, so it is its own component. */
@@ -10,7 +10,7 @@ function Line() {
   const pct = usePlayback((s) => (s.duration ? Math.min(100, (s.position / s.duration) * 100) : 0))
   return (
     <span className="m-mini__line" aria-hidden>
-      <span style={{ width: `${pct}%` }} />
+      <span style={{ transform: `scaleX(${pct / 100})` }} />
     </span>
   )
 }
@@ -32,7 +32,7 @@ export default function MiniPlayer() {
         <span className="m-thumb">
           <Cover id={track.coverArt} size={96} />
         </span>
-        <span className="m-text">
+        <span key={track.id} className="m-text m-swap">
           <span className="m-text__title">{track.title}</span>
           <span className={error ? 'm-text__sub m-text__sub--error' : 'm-text__sub'}>{error ? error.message : track.artist}</span>
         </span>
@@ -42,7 +42,7 @@ export default function MiniPlayer() {
         <Icon name="lyrics" size={22} />
       </button>
       <button type="button" className="icon-btn m-mini__toggle" aria-label={playing ? 'Pause' : 'Play'} aria-busy={status === 'loading' || status === 'buffering'} onClick={togglePlay}>
-        <Icon name={playing ? 'pause' : 'play'} size={26} />
+        <SwapIcon name={playing ? 'pause' : 'play'} size={26} />
       </button>
       <Line />
     </section>

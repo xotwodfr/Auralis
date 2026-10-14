@@ -1,5 +1,5 @@
 import type { Repeat } from '../audio/queue'
-import { Icon } from './Icon'
+import { Icon, SwapIcon } from './Icon'
 
 interface Props {
   playing: boolean
@@ -25,13 +25,13 @@ export function TransportControls(p: Props) {
         <Icon name="prev" />
       </button>
       <button type="button" className="icon-btn icon-btn--main" aria-label={p.playing ? 'Pause' : 'Play'} title={p.playing ? 'Pause (Space)' : 'Play (Space)'} aria-busy={p.busy} onClick={p.onToggle}>
-        <Icon name={p.playing ? 'pause' : 'play'} size={26} />
+        <SwapIcon name={p.playing ? 'pause' : 'play'} size={26} />
       </button>
       <button type="button" className="icon-btn" aria-label="Next track" title="Next" disabled={!p.canNext} onClick={p.onNext}>
         <Icon name="next" />
       </button>
       <button type="button" className="icon-btn" aria-label={`Repeat ${p.repeat}`} title="Repeat" aria-pressed={p.repeat !== 'off'} onClick={p.onRepeat}>
-        <Icon name={p.repeat === 'one' ? 'repeat-one' : 'repeat'} />
+        <SwapIcon name={p.repeat === 'one' ? 'repeat-one' : 'repeat'} />
       </button>
     </div>
   )

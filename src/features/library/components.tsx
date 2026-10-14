@@ -11,7 +11,7 @@ import { usePlayback } from '../../state/playback'
 import { Artwork } from '../../ui/Artwork'
 import { isStarred, useStarred, useToggleStar, type StarTarget } from './starred'
 import { TrackActions } from './TrackActions'
-import { Icon } from '../../ui/Icon'
+import { Icon, SwapIcon } from '../../ui/Icon'
 import { Grid } from '../../ui/Grid'
 import { ErrorState, Skeleton } from '../../ui/State'
 import { VirtualList } from '../../ui/VirtualList'
@@ -36,7 +36,7 @@ export function StarButton({ target, starred, name }: { target: StarTarget; star
       title={starred ? 'Remove from favorites' : 'Add to favorites'}
       onClick={() => void toggle(target)}
     >
-      <Icon name={starred ? 'heart-fill' : 'heart'} size={20} />
+      <SwapIcon name={starred ? 'heart-fill' : 'heart'} size={20} />
     </button>
   )
 }
