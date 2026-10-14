@@ -67,6 +67,10 @@
   /* Motion */
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  /* Press feedback: in fast, out on a spring. One lyric-line duration shared by every lyrics view. */
+  --press-in: 0.08s;
+  --press-out: 0.34s;
+  --lyric-move: 0.5s var(--ease-out-quart);
 
   /* Layout */
   --max-read: 720px;

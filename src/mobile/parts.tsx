@@ -48,6 +48,26 @@ export function Backdrop() {
   )
 }
 
+const EXIT_MS = 200
+
+/** Plays a sheet's exit animation (`closing` → .is-closing), then runs `done`; at once under reduced motion. */
+export function useDismiss(done: () => void): [closing: boolean, dismiss: () => void] {
+  const [closing, setClosing] = useState(false)
+  const timer = useRef(0)
+  // Unmounted first (hardware Back): `done` must not run, or it would navigate a second time.
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const dismiss = () => {
+    if (closing) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return done()
+    setClosing(true)
+    timer.current = window.setTimeout(() => {
+      setClosing(false)
+      done()
+    }, EXIT_MS)
+  }
+  return [closing, dismiss]
+}
+
 /** Opens Now Playing over the current page (see MobileApp). */
 export function useOpenPlayer() {
   const navigate = useNavigate()

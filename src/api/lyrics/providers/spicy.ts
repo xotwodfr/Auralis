@@ -1,5 +1,6 @@
 import { LyricsError, type Attribution, type Credit, type LyricLine, type LyricWord, type Lyrics, type LyricsProvider } from '../types'
 import { backendUrl } from '../../../lib/backend'
+import { fillTimes } from '../lrc'
 
 // Talks to OUR backend (server/spicy.mjs), never to Spicy Lyrics directly: the secret key lives only there.
 /** Lyrics that end well after the track does belong to a different recording (live/extended/wrong id). */
@@ -12,13 +13,15 @@ const isObj = (v: unknown): v is Json => typeof v === 'object' && v !== null
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 const str = (v: unknown): v is string => typeof v === 'string'
 
-function words(raw: unknown): LyricWord[] {
-  if (!Array.isArray(raw)) return []
-  return raw.flatMap((s): LyricWord[] =>
-    isObj(s) && str(s.Text) && s.Text.trim() && num(s.StartTime) && num(s.EndTime)
-      ? [{ text: s.Text.trim(), start: s.StartTime, end: s.EndTime, ...(s.IsPartOfWord === true && { joinNext: true }) }]
+/** Syllables of one vocal. A syllable missing its times keeps its text and borrows timing from its neighbours. */
+function words(v: Json): LyricWord[] {
+  if (!Array.isArray(v.Syllables)) return []
+  const w = v.Syllables.flatMap((s): LyricWord[] =>
+    isObj(s) && str(s.Text) && s.Text.trim()
+      ? [{ text: s.Text.trim(), start: num(s.StartTime) ? s.StartTime : NaN, end: num(s.EndTime) ? s.EndTime : NaN, ...(s.IsPartOfWord === true && { joinNext: true }) }]
       : [],
   )
+  return fillTimes(w, num(v.StartTime) ? v.StartTime : NaN, num(v.EndTime) ? v.EndTime : NaN)
 }
 
 export const joinWords = (w: LyricWord[]) => w.reduce((out, x, i) => out + x.text + (x.joinNext || i === w.length - 1 ? '' : ' '), '')
@@ -56,10 +59,10 @@ export function parseSpicy(body: unknown, trackDuration: number): Lyrics | null 
     if (!isObj(item)) continue
     if (body.Type === 'Syllable') {
       if (item.Type !== 'Vocal' || !isObj(item.Lead)) continue
-      const w = words(item.Lead.Syllables)
+      const w = words(item.Lead)
       if (!w.length) continue
       const background = (Array.isArray(item.Background) ? item.Background : []).flatMap((b) => {
-        const bw = isObj(b) ? words(b.Syllables) : []
+        const bw = isObj(b) ? words(b) : []
         return bw.length ? [{ text: joinWords(bw), words: bw }] : []
       })
       lines.push({ time: w[0]!.start, text: joinWords(w), words: w, ...(background.length && { background }), ...(item.OppositeAligned === true && { opposite: true }) })

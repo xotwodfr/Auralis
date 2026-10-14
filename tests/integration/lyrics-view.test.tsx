@@ -97,6 +97,55 @@ describe('Now Playing', () => {
     expect(follow).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('resumes following on its own once the user leaves the lyrics alone', async () => {
+    server.use(serverLyrics(structured(synced([1000, 'one'], [2000, 'two']))))
+    usePlayback.getState().playTracks([A])
+    mount()
+    const follow = await screen.findByRole('button', { name: 'Follow playback' })
+    const box = await lyrics()
+    act(() => audio.tick(1.5))
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      fireEvent.wheel(box)
+      expect(screen.getByRole('button', { name: 'Back to current line' })).toBeInTheDocument()
+      act(() => vi.advanceTimersByTime(4000))
+      fireEvent.touchMove(box) // still scrolling: the wait starts over
+      act(() => vi.advanceTimersByTime(4000))
+      expect(follow).toHaveAttribute('aria-pressed', 'false')
+      act(() => vi.advanceTimersByTime(1000))
+      expect(follow).toHaveAttribute('aria-pressed', 'true')
+      // Turning follow off on purpose is not a scroll: it stays off.
+      fireEvent.click(follow)
+      act(() => vi.advanceTimersByTime(10000))
+      expect(follow).toHaveAttribute('aria-pressed', 'false')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('leads into the next line early, but never cuts a held word short, and marks pauses', async () => {
+    server.use(
+      serverLyrics(structured([])),
+      http.get(`${LRCLIB}/get`, () =>
+        HttpResponse.json({
+          trackName: 'Song A', artistName: 'Artist A', albumName: 'Album 0', duration: 200, plainLyrics: 'x',
+          syncedLyrics: '[00:02.00]<00:02.00>held <00:03.00>note<00:06.00>\n[00:05.80]next one\n[00:07.00]<00:07.00>soon<00:08.00>\n[00:08.30]after\n[00:09.00]<00:09.00>then<00:10.00>\n[00:30.00]late',
+        }),
+      ),
+    )
+    usePlayback.getState().playTracks([A])
+    mount()
+    const box = await lyrics()
+    const line = (name: string) => within(box).getByRole('button', { name })
+    act(() => audio.tick(5.6))
+    expect(line('held note')).toHaveAttribute('aria-current', 'true') // 'note' is still being sung
+    act(() => audio.tick(6))
+    expect(line('next one')).toHaveAttribute('aria-current', 'true')
+    act(() => audio.tick(8))
+    expect(line('after')).toHaveAttribute('aria-current', 'true') // 0.3 s ahead of its time
+    expect(box.querySelectorAll('.lyric--dots')).toHaveLength(1) // only the 20 s pause before 'late'
+  })
+
   it('renders plain-text lyrics without seek buttons', async () => {
     server.use(serverLyrics(structured([{ synced: false, line: [{ value: 'plain one' }, { value: 'plain two' }] }])))
     usePlayback.getState().playTracks([A])

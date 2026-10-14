@@ -36,7 +36,9 @@ function Shell() {
       <Backdrop />
       <main className="m-main">
         <ErrorBoundary key={pathname}>
-          <Outlet />
+          <div className="m-route">
+            <Outlet />
+          </div>
         </ErrorBoundary>
       </main>
       <div className="m-dock">

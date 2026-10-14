@@ -102,19 +102,74 @@
   cursor: pointer;
 }
 
+/* 36px to look at, 44px to hit. */
+.m-round::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+}
+
+.m-round:not(.m-round--glass) {
+  position: relative;
+}
+
 .m-round--plain {
   background: none;
 }
 
-.m-round:active,
-.m-play:active,
-.m-tab:active,
-.m-row:active,
-.m-song__main:active,
-.m-tile a:active,
-.m-quick__item:active,
-.m-browse__tile:active {
-  transform: scale(0.96);
+/* Press feedback, one language for every tappable thing: in fast, back on a spring. Icon controls press deeper than
+   wide rows and tiles, which also light up a little so a press reads on any background. */
+[data-platform='mobile'] :is(.icon-btn, .btn, .m-round, .m-play, .m-chip, .m-tab, .m-row, .m-song__main, .m-tile a, .m-quick__item, .m-browse__tile, .m-mini__open, .m-lyrics__expand, .choice, .menu__item) {
+  --press: 0.96;
+  transition: transform var(--press-out) var(--ease-spring), opacity 0.2s var(--m-ease), background-color 0.2s var(--m-ease), color 0.2s var(--m-ease);
+}
+
+[data-platform='mobile'] :is(.icon-btn, .m-round, .m-lyrics__expand) {
+  --press: 0.88;
+}
+
+[data-platform='mobile'] :is(.m-row, .m-song__main, .m-mini__open, .menu__item, .choice) {
+  --press: 0.985;
+}
+
+[data-platform='mobile'] .icon-btn--main {
+  --press: 0.92;
+}
+
+[data-platform='mobile'] :is(.icon-btn, .btn, .m-round, .m-play, .m-chip, .m-tab, .m-row, .m-song__main, .m-tile a, .m-quick__item, .m-browse__tile, .m-mini__open, .m-lyrics__expand, .choice, .menu__item):active:not(:disabled) {
+  transform: scale(var(--press));
+  transition-duration: var(--press-in);
+}
+
+[data-platform='mobile'] :is(.icon-btn:not(.icon-btn--main), .m-round--plain, .m-lyrics__expand):active:not(:disabled) {
+  opacity: 0.6;
+}
+
+[data-platform='mobile'] :is(.m-row, .m-song__main, .menu__item):active {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-platform='mobile'] :is(.btn, .icon-btn, .m-chip):disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Pages arrive with a short fade-up; the page underneath Now Playing never re-animates (see MobileApp). */
+.m-route {
+  animation: m-page-in 0.24s var(--m-ease);
+}
+
+@keyframes m-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* The mini-player's title fades across a track change. */
+.m-swap {
+  animation: m-fade 0.3s var(--m-ease);
 }
 
 /* Layout: pages scroll with the window; the dock (mini-player + tabs) is fixed at the bottom. */
@@ -727,10 +782,13 @@
   border-radius: 2px;
 }
 
+/* scaleX, not width: the playhead moves without layout, smoothed between the 4 Hz time updates. */
 .m-mini__line > span {
   display: block;
   height: 100%;
   background: #fff;
+  transform-origin: left;
+  transition: transform 0.25s linear;
 }
 
 .m-tabs {
@@ -777,6 +835,19 @@
 @keyframes m-rise {
   from {
     transform: translateY(40px);
+    opacity: 0;
+  }
+}
+
+/* Leaving: the reverse of m-rise, quicker (useDismiss waits for it). */
+:is(.m-player, .m-lyricsfull).is-closing {
+  animation: m-sink 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes m-sink {
+  to {
+    transform: translateY(48px);
     opacity: 0;
   }
 }
@@ -1062,10 +1133,24 @@
   font-size: 1.75rem;
 }
 
-/* Lines other than the one being sung are out of focus. */
+/* Lines other than the one being sung are out of focus; focus moves with the line, not in a jump. */
+:is(.m-lyricsfull, .m-land) .lyric__btn {
+  transition: opacity var(--lyric-move), filter var(--lyric-move);
+}
+
 :is(.m-lyricsfull, .m-land) .lyric:not(.lyric--active) .lyric__btn {
   filter: blur(1.5px);
   opacity: 0.55;
+}
+
+/* Touch leaves :hover stuck on the last line tapped; a phone has no hover to show. */
+[data-platform='mobile'] .lyric__btn:hover {
+  background: none;
+}
+
+/* A per-frame glow on the sung syllable is too costly for phone GPUs; the lift and sweep carry it. */
+[data-platform='mobile'] .lyric--active .syl.is-active {
+  filter: none;
 }
 
 /* Source credit stays (provider attribution); the follow switch and match picker live in the inline card. */
@@ -1235,7 +1320,14 @@
   border: 0;
   border-radius: 12px 12px 0 0;
   backdrop-filter: none;
-  animation: m-rise 0.3s var(--m-ease);
+  animation: m-sheet 0.36s var(--ease-spring);
+}
+
+/* Bottom sheets slide up from the edge they are attached to. */
+@keyframes m-sheet {
+  from {
+    transform: translateY(100%);
+  }
 }
 
 [data-platform='mobile'] .menu__item {
@@ -1279,6 +1371,8 @@
 @media (prefers-reduced-motion: reduce) {
   .m-player,
   .m-lyricsfull,
+  .m-route,
+  .m-swap,
   [data-platform='mobile'] .dialog {
     animation: none;
   }
