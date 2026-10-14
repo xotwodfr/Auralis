@@ -18,6 +18,7 @@ function Progress() {
   const seek = usePlayback((s) => s.seek)
   return (
     <div className="progress">
+      <span className="progress__line" aria-hidden style={{ width: `${duration ? Math.min(100, (position / duration) * 100) : 0}%` }} />
       <span className="progress__time">{formatDuration(position)}</span>
       <Slider
         label="Seek"
@@ -60,7 +61,7 @@ export default function PlayerBar() {
 
   return (
     <section className="player glass-nav" aria-label="Player">
-      <div className="player__track">
+      <NavLink to="/now-playing" className="player__track" aria-label={track ? `Now playing: ${track.title}` : 'Now Playing'}>
         <div className="player__art">
           <Cover id={track?.coverArt} size={112} />
         </div>
@@ -71,7 +72,7 @@ export default function PlayerBar() {
             {status}
           </span>
         </div>
-      </div>
+      </NavLink>
 
       <div className="player__center">
         <TransportControls

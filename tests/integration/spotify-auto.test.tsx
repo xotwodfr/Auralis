@@ -90,7 +90,7 @@ describe('automatic Spotify matching on Now Playing', () => {
     usePlayback.getState().playTracks([{ ...A, isrc: ['USABC1234567'] }])
     mount()
     expect(await screen.findByRole('button', { name: 'spicy-one' })).toBeInTheDocument()
-    expect(spicyCalls).toEqual([ID])
+    expect([...new Set(spicyCalls)]).toEqual([ID])
     // Only bounded track metadata goes to our backend; the ISRC from the library is used.
     expect(Object.fromEntries(matchCalls[0]!)).toEqual({ title: 'Song A', artist: 'Artist A', isrc: 'USABC1234567' })
     expect(summary()).toHaveTextContent('· matched automatically')

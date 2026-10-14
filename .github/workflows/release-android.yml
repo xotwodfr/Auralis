@@ -40,18 +40,29 @@ jobs:
         run: |
           export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           npx -y @tauri-apps/cli@2 android build --apk --target aarch64 --ci
-      # An unsigned APK cannot be installed. shortcut: a fresh key per build, so updating over an older install needs an uninstall first; store a keystore as a secret to fix.
+      # An unsigned APK cannot be installed. With ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD secrets set, every release
+      # shares one signature and updates install over older builds; without them a throwaway key is used (uninstall first).
       - name: Sign
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
           UNSIGNED="$(find src-tauri/gen/android -name '*-unsigned.apk' | head -1)"
           [ -n "$UNSIGNED" ] || { echo "no unsigned apk found"; exit 1; }
-          keytool -genkeypair -keystore ks.jks -alias auralis -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass auralis-ci -keypass auralis-ci -dname "CN=Auralis"
+          export PASS="auralis-ci"
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > ks.jks
+            export PASS="$KEYSTORE_PASSWORD"
+          else
+            echo "::warning::No signing keystore secret; using a throwaway key"
+            keytool -genkeypair -keystore ks.jks -alias auralis -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$PASS" -keypass "$PASS" -dname "CN=Auralis"
+          fi
           mkdir out
           OUT="out/Auralis-${TAG#v}-android-arm64.apk"
           "$BT/zipalign" -f -p 4 "$UNSIGNED" aligned.apk
-          "$BT/apksigner" sign --ks ks.jks --ks-pass pass:auralis-ci --key-pass pass:auralis-ci --out "$OUT" aligned.apk
+          "$BT/apksigner" sign --ks ks.jks --ks-pass env:PASS --key-pass env:PASS --out "$OUT" aligned.apk
           "$BT/apksigner" verify "$OUT"
           ls -l out
       - uses: actions/upload-artifact@v4
