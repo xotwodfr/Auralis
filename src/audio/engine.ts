@@ -1,7 +1,7 @@
 // Framework-free wrapper around HTMLAudioElement. Playback lives here, outside React, so route
 // changes and re-renders can never interrupt it.
 
-import { VocalRemover, type KaraokeState } from './karaoke'
+import { DEFAULT_AMOUNT, VocalRemover, type KaraokeState } from './karaoke'
 
 export type PlayStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'buffering' | 'ended' | 'error'
 
@@ -29,6 +29,7 @@ export class AudioEngine {
   private startAt = 0
   private remover: VocalRemover | null = null
   private wantKaraoke = false
+  private karaokeAmount = DEFAULT_AMOUNT
   /** Web Audio only gets samples from a cross-origin stream that was fetched with CORS, so that is requested lazily. */
   private cors = false
 
@@ -109,6 +110,11 @@ export class AudioEngine {
     this.reload()
   }
 
+  setKaraokeAmount(amount: number): void {
+    this.karaokeAmount = amount
+    this.remover?.setAmount(amount)
+  }
+
   private reload() {
     const el = this.element
     const url = el.getAttribute('src')
@@ -118,7 +124,7 @@ export class AudioEngine {
   private attachRemover() {
     if (this.remover) return
     try {
-      this.remover = new VocalRemover(this.element, (state) => this.emit({ type: 'karaoke', state }))
+      this.remover = new VocalRemover(this.element, this.karaokeAmount, (state) => this.emit({ type: 'karaoke', state }))
       this.remover.setActive(this.wantKaraoke)
     } catch {
       this.cors = false

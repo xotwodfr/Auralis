@@ -1,6 +1,6 @@
 import { currentEntry } from '../../audio/queue'
 import { usePlayback } from '../../state/playback'
-import { KaraokeButton } from '../../ui/KaraokeButton'
+import { KaraokeButton, KaraokeIntensity } from '../../ui/KaraokeButton'
 import { EmptyState } from '../../ui/State'
 import { Cover, Page } from '../library/components'
 import LyricsView from '../lyrics/LyricsView'
@@ -29,6 +29,7 @@ export default function NowPlaying() {
           <p className="nowplaying__artist">{track.artist}</p>
           {track.album && <p className="nowplaying__album">{track.album}</p>}
           <KaraokeButton />
+          <KaraokeIntensity />
         </div>
       </div>
       <div className="nowplaying__lyrics">

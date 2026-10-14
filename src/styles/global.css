@@ -1058,6 +1058,21 @@ a.icon-btn[aria-current='page'] {
   color: var(--accent-link);
 }
 
+.karaoke-intensity {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+}
+
+.karaoke-intensity__value {
+  min-width: 3ch;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 .nowplaying__meta .karaoke {
   justify-self: start;
 }

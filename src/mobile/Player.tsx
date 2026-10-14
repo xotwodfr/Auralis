@@ -10,7 +10,7 @@ import QueuePanel from '../features/queue/QueuePanel'
 import { formatDuration } from '../lib/format'
 import { usePlayback } from '../state/playback'
 import { Icon } from '../ui/Icon'
-import { KaraokeButton } from '../ui/KaraokeButton'
+import { KaraokeButton, KaraokeIntensity } from '../ui/KaraokeButton'
 import { Slider } from '../ui/Slider'
 import { TransportControls } from '../ui/TransportControls'
 import { Backdrop, tintStyle, useCoverTint } from './parts'
@@ -123,6 +123,7 @@ export default function Player() {
           </div>
           <Seek />
           {transport}
+          <KaraokeIntensity />
           {s.error && (
             <p className="m-player__error" role="alert">
               {s.error.message}{' '}
@@ -180,6 +181,7 @@ export default function Player() {
             <KaraokeButton className="m-round m-round--glass" size={22} />
           </div>
           <footer className="m-lyricsfull__foot">
+            <KaraokeIntensity />
             <Seek remaining />
             {transport}
             <div className="m-lyricsfull__tabs">

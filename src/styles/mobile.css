@@ -1242,3 +1242,21 @@
     opacity: 0;
   }
 }
+
+[data-platform='mobile'] .karaoke-intensity {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+}
+
+[data-platform='mobile'] .karaoke-intensity .slider {
+  height: 28px;
+}
+
+[data-platform='mobile'] .karaoke-intensity .slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  background: #fff;
+  border: 0;
+}

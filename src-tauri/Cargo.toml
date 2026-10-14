@@ -1,6 +1,6 @@
 [package]
 name = "auralis-desktop"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "Auralis desktop shell (Windows, Linux): the web app in a native webview"
 
