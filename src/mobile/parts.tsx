@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { paletteFor } from '../app/artworkTheme'
+import { coverArtUrl } from '../api/subsonic/endpoints'
 import type { Song } from '../api/subsonic/types'
 import { currentEntry } from '../audio/queue'
 import { Cover, StarButton } from '../features/library/components'
@@ -28,6 +29,21 @@ export function useCoverTint(coverArt: string | undefined, lightness = 32): stri
 }
 
 export const tintStyle = (tint: string | undefined) => (tint ? ({ '--tint': tint } as CSSProperties) : undefined)
+
+/** The playing track's cover, blurred, behind everything; fades between covers. Sits at z-index -1 of the nearest stacking context. */
+export function Backdrop() {
+  const credentials = useAuth((s) => s.session?.credentials)
+  const cover = usePlayback((s) => currentEntry(s.queue)?.track.coverArt)
+  const src = credentials && cover ? coverArtUrl(credentials, cover, 160) : undefined
+  // A failed load must not leave a broken-image icon over the page.
+  const [bad, setBad] = useState<string>()
+  if (!src || bad === src) return null
+  return (
+    <div className="m-backdrop" aria-hidden>
+      <img key={src} src={src} alt="" decoding="async" onError={() => setBad(src)} />
+    </div>
+  )
+}
 
 /** Opens Now Playing over the current page (see MobileApp). */
 export function useOpenPlayer() {

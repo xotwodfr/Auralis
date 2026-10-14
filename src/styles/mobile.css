@@ -146,7 +146,8 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--bg);
+  background: rgba(18, 18, 18, 0.45);
+  backdrop-filter: blur(12px);
 }
 
 .m-h1 {
@@ -428,7 +429,8 @@
   gap: 8px;
   margin: 0 -16px;
   padding: 0 16px 12px;
-  background: var(--bg);
+  background: rgba(18, 18, 18, 0.45);
+  backdrop-filter: blur(12px);
 }
 
 .m-chip {
@@ -519,7 +521,7 @@
   justify-items: center;
   margin: 0 -16px;
   padding: calc(var(--m-top-pad) + 4px) 16px 8px;
-  background: linear-gradient(to bottom, var(--tint, var(--m-tint)) 0%, color-mix(in srgb, var(--tint, var(--m-tint)) 35%, var(--bg)) 70%, var(--bg) 100%);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--tint, var(--m-tint)) 55%, transparent) 0%, transparent 100%);
 }
 
 .m-hero__bar {
@@ -767,8 +769,7 @@
   padding: calc(var(--m-top-pad) + 4px) 24px calc(max(env(safe-area-inset-bottom, 0px), 8px) + 24px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: linear-gradient(to bottom, var(--tint, var(--m-tint)) 0%, color-mix(in srgb, var(--tint, var(--m-tint)) 40%, #121212) 55vh, #121212 100vh);
-  background-attachment: local;
+  background: #121212;
   animation: m-rise 0.35s var(--m-ease);
 }
 
@@ -983,7 +984,7 @@
   display: flex;
   flex-direction: column;
   padding: calc(var(--m-top-pad) + 4px) 16px max(env(safe-area-inset-bottom, 0px), 8px);
-  background: color-mix(in srgb, var(--tint, var(--m-tint)) 85%, #000);
+  background: #121212;
   animation: m-rise 0.3s var(--m-ease);
 }
 
@@ -1122,5 +1123,37 @@
   .m-lyricsfull,
   [data-platform='mobile'] .dialog {
     animation: none;
+  }
+}
+
+/* Blurred cover behind the page, the player and the lyrics. The dark wash keeps text readable on bright covers. */
+.m-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: #121212;
+  pointer-events: none;
+}
+
+.m-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.4);
+  filter: blur(40px) saturate(1.4);
+  animation: m-fade 0.8s var(--m-ease);
+}
+
+.m-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(18, 18, 18, 0.35), rgba(18, 18, 18, 0.75));
+}
+
+@keyframes m-fade {
+  from {
+    opacity: 0;
   }
 }

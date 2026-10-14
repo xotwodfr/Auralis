@@ -11,7 +11,7 @@ import { usePlayback } from '../state/playback'
 import { Icon } from '../ui/Icon'
 import { Slider } from '../ui/Slider'
 import { TransportControls } from '../ui/TransportControls'
-import { tintStyle, useCoverTint } from './parts'
+import { Backdrop, tintStyle, useCoverTint } from './parts'
 
 function Seek() {
   const position = usePlayback((s) => s.position)
@@ -64,6 +64,7 @@ export default function Player() {
   const playing = s.status === 'playing' || s.status === 'buffering' || (s.status === 'loading' && s.autoplay)
   return (
     <div className="m-player" role="dialog" aria-modal="true" aria-label="Now Playing" style={tintStyle(tint)}>
+      <Backdrop />
       <header className="m-player__bar">
         <button ref={closeButton} type="button" className="m-round m-round--plain" aria-label="Close player" onClick={close}>
           <Icon name="down" size={26} />
@@ -143,6 +144,7 @@ export default function Player() {
 
       {lyricsOpen && track && (
         <div className="m-lyricsfull" role="dialog" aria-modal="true" aria-label="Lyrics">
+          <Backdrop />
           <header className="m-lyricsfull__bar">
             <button type="button" className="m-round m-round--plain" aria-label="Close lyrics" autoFocus onClick={() => setLyricsOpen(false)}>
               <Icon name="down" size={26} />

@@ -6,6 +6,7 @@ import { ToastRegion } from '../ui/Toast'
 import { Icon, type IconName } from '../ui/Icon'
 import MiniPlayer from './MiniPlayer'
 import Player from './Player'
+import { Backdrop } from './parts'
 import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage, SettingsPage } from './pages'
 
 const TABS: { to: string; label: string; icon: IconName; match: (path: string) => boolean }[] = [
@@ -22,6 +23,7 @@ function Shell() {
   }, [pathname])
   return (
     <div className="m-app">
+      <Backdrop />
       <main className="m-main">
         <ErrorBoundary key={pathname}>
           <Outlet />
