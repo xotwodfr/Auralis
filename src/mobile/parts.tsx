@@ -33,7 +33,8 @@ export const tintStyle = (tint: string | undefined) => (tint ? ({ '--tint': tint
 export function useOpenPlayer() {
   const navigate = useNavigate()
   const location = useLocation()
-  return () => navigate('/now-playing', { state: { background: location } })
+  /** `lyrics`: open already scrolled to the lyrics card. */
+  return (lyrics = false) => navigate('/now-playing', { state: { background: location, lyrics } })
 }
 
 export function BackButton() {

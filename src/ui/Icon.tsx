@@ -41,6 +41,7 @@ const PATHS = {
   ),
   home: <path d="M4 10.5L12 4l8 6.5V20h-5.5v-6h-5v6H4z" />,
   library: <path d="M5 4v16M10 4v16M14.5 4.5l5 15" />,
+  expand: <path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />,
   trash: <path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" />,
 } as const
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
 import { currentEntry, nextIndex } from '../audio/queue'
 import { Cover, StarButton } from '../features/library/components'
@@ -48,9 +48,13 @@ export default function Player() {
   const tint = useCoverTint(track?.coverArt, 30)
   const [queueOpen, setQueueOpen] = useState(false)
   const closeButton = useRef<HTMLButtonElement>(null)
+  // The mini-player's lyrics button opens straight into the fullscreen lyrics.
+  const [lyricsOpen, setLyricsOpen] = useState((useLocation().state as { lyrics?: boolean } | null)?.lyrics === true)
   const close = () => (history.length > 1 ? navigate(-1) : navigate('/home', { replace: true }))
 
-  useEffect(() => closeButton.current?.focus(), [])
+  useEffect(() => {
+    closeButton.current?.focus()
+  }, [])
   // The page underneath must not scroll behind the sheet.
   useEffect(() => {
     document.body.classList.add('m-locked')
@@ -68,6 +72,9 @@ export default function Player() {
           <span>Playing from</span>
           <strong>{track?.album ?? 'your queue'}</strong>
         </p>
+        <button type="button" className="m-round m-round--plain" aria-label="Lyrics" onClick={() => setLyricsOpen(true)}>
+          <Icon name="lyrics" size={24} />
+        </button>
         <button type="button" className="m-round m-round--plain" aria-label="Queue" aria-expanded={queueOpen} onClick={() => setQueueOpen(true)}>
           <Icon name="queue" size={24} />
         </button>
@@ -117,16 +124,46 @@ export default function Player() {
               )}
             </p>
           )}
+          {!lyricsOpen && (
           <section className="m-lyrics" aria-labelledby="m-lyrics-title">
             <h2 id="m-lyrics-title" className="m-lyrics__title">
               Lyrics
+              <button type="button" className="m-lyrics__expand" aria-label="Fullscreen lyrics" onClick={() => setLyricsOpen(true)}>
+                <Icon name="expand" size={20} />
+              </button>
             </h2>
             <LyricsView
               key={track.id}
               track={{ id: track.id, title: track.title, artist: track.artist, album: track.album, duration: track.duration, isrc: track.isrc, explicit: track.explicit }}
             />
           </section>
+          )}
         </>
+      )}
+
+      {lyricsOpen && track && (
+        <div className="m-lyricsfull" role="dialog" aria-modal="true" aria-label="Lyrics">
+          <header className="m-lyricsfull__bar">
+            <button type="button" className="m-round m-round--plain" aria-label="Close lyrics" autoFocus onClick={() => setLyricsOpen(false)}>
+              <Icon name="down" size={26} />
+            </button>
+            <p className="m-lyricsfull__title">
+              <strong>{track.title}</strong>
+              <span>{track.artist}</span>
+            </p>
+            <StarButton target={{ kind: 'song', item: track }} name={track.title} starred={isStarred(ids, 'song', track.id)} />
+          </header>
+          <LyricsView
+            key={track.id}
+            track={{ id: track.id, title: track.title, artist: track.artist, album: track.album, duration: track.duration, isrc: track.isrc, explicit: track.explicit }}
+          />
+          <footer className="m-lyricsfull__foot">
+            <Seek />
+            <button type="button" className="m-play" aria-label={playing ? 'Pause' : 'Play'} aria-busy={s.status === 'loading' || s.status === 'buffering'} onClick={s.togglePlay}>
+              <Icon name={playing ? 'pause' : 'play'} size={26} />
+            </button>
+          </footer>
+        </div>
       )}
 
       {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}

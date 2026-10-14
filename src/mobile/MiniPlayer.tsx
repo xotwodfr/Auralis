@@ -28,7 +28,7 @@ export default function MiniPlayer() {
   const playing = status === 'playing' || status === 'buffering' || (status === 'loading' && autoplay)
   return (
     <section className="m-mini" aria-label="Player" style={tintStyle(tint)}>
-      <button type="button" className="m-mini__open" aria-label={`Open player: ${track.title}`} onClick={open}>
+      <button type="button" className="m-mini__open" aria-label={`Open player: ${track.title}`} onClick={() => open()}>
         <span className="m-thumb">
           <Cover id={track.coverArt} size={96} />
         </span>
@@ -38,6 +38,9 @@ export default function MiniPlayer() {
         </span>
       </button>
       <StarButton target={{ kind: 'song', item: track }} name={track.title} starred={isStarred(ids, 'song', track.id)} />
+      <button type="button" className="icon-btn" aria-label="Lyrics" onClick={() => open(true)}>
+        <Icon name="lyrics" size={22} />
+      </button>
       <button type="button" className="icon-btn m-mini__toggle" aria-label={playing ? 'Pause' : 'Play'} aria-busy={status === 'loading' || status === 'buffering'} onClick={togglePlay}>
         <Icon name={playing ? 'pause' : 'play'} size={26} />
       </button>

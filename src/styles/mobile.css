@@ -955,6 +955,95 @@
   min-height: 120px;
 }
 
+.m-lyrics__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.m-lyrics__expand {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px 0;
+  color: var(--text);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Fullscreen lyrics: only the lyrics, a seek bar and play/pause. */
+.m-lyricsfull {
+  --np-h: calc(100dvh - var(--m-top-pad) - 64px - 132px - max(env(safe-area-inset-bottom, 0px), 8px));
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--m-top-pad) + 4px) 16px max(env(safe-area-inset-bottom, 0px), 8px);
+  background: color-mix(in srgb, var(--tint, var(--m-tint)) 85%, #000);
+  animation: m-rise 0.3s var(--m-ease);
+}
+
+.m-lyricsfull__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 64px;
+  margin: 0 -8px;
+}
+
+.m-lyricsfull__title {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.m-lyricsfull__title strong,
+.m-lyricsfull__title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.m-lyricsfull__title span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8125rem;
+}
+
+.m-lyricsfull .star {
+  color: var(--text);
+}
+
+.m-lyricsfull .star[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.m-lyricsfull .lyric__btn {
+  font-size: 1.75rem;
+}
+
+.m-lyricsfull__foot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 132px;
+}
+
+.m-lyricsfull__foot .m-seek {
+  grid-column: 1 / -1;
+}
+
+.m-lyricsfull__foot .m-play {
+  justify-self: center;
+  grid-column: 1 / -1;
+  background: #fff;
+}
+
 /* Queue: a full-screen sheet over the player. */
 [data-platform='mobile'] .queue {
   inset: 0;
@@ -1030,6 +1119,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .m-player,
+  .m-lyricsfull,
   [data-platform='mobile'] .dialog {
     animation: none;
   }
