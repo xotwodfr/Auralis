@@ -1,10 +1,54 @@
 # Auralis
 
-A web client for [Navidrome](https://www.navidrome.org/) and other Subsonic/OpenSubsonic servers: library browsing and search, persistent playback with a queue, favourites, playlist editing, play reporting back to your server, server-first synced lyrics (LRCLIB fallback), and an Apple-inspired Liquid Glass interface with several themes. See `PLAN.md` for scope and `TASKS.md` for status.
+A modern client for [Navidrome](https://www.navidrome.org/) and any other Subsonic/OpenSubsonic server, with an
+Apple-inspired Liquid Glass interface and word-by-word synced lyrics.
+
+## Features
+
+- **Library** — artists, albums, recently added and recently played, search, and artwork-driven *Album Artwork* theme
+  alongside several fixed themes.
+- **Playback** — persistent player with a queue (play next, add, shuffle, repeat), media-key and lock-screen controls,
+  and play reporting back to your server.
+- **Your server stays the source of truth** — favourites and playlists are stored on the server and show up in your
+  other Subsonic clients.
+- **Lyrics** — server lyrics first, [LRCLIB](https://lrclib.net) as fallback, and optional syllable-level lyrics from
+  Spicy Lyrics (the active syllable lifts and glows as it is sung).
+
+## Screenshots
+
+![Now Playing with synced lyrics](docs/screenshots/now-playing.png)
+
+Word-by-word lyrics from Spicy Lyrics: the syllable being sung lifts and glows.
+
+![Syllable-synced lyrics](docs/screenshots/word-synced.png)
+
+![Albums](docs/screenshots/library.png)
+
+## Platforms
+
+| Platform | Technology | Where |
+|---|---|---|
+| Browser | React + Vite | `src/` |
+| Linux, Windows, Android | Tauri 2 shell around the web app | `src-tauri/` |
+| iOS 26+, macOS 26+ | Native SwiftUI | `apple/` |
+| Lyrics backend | Node, no dependencies, Docker image | `server/`, `Dockerfile` |
+
+Tagged releases (`v*`) build a portable Windows exe and a signed Android APK in CI. What is verified on each platform is
+tracked honestly in [`docs/PLATFORMS.md`](docs/PLATFORMS.md).
+
+## Documentation
+
+| Doc | What is in it |
+|---|---|
+| [`PLAN.md`](PLAN.md), [`TASKS.md`](TASKS.md) | Scope and status |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md), [`DESIGN.md`](DESIGN.md) | How the app is built and styled |
+| [`API.md`](API.md) | Subsonic usage and the lyrics backend API |
+| [`TESTING.md`](TESTING.md) | Test strategy and the browser-test setup |
+| [`docs/`](docs) | Apple, desktop, backend and platform status |
 
 ## Run it
 
-Requires Node 20.12+ (developed on Node 24).
+Requires Node 20.12+ (developed on Node 24). Docker is optional and only runs the lyrics backend (`docker compose up -d`).
 
 ```sh
 npm install
