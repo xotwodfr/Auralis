@@ -1054,6 +1054,29 @@ a.icon-btn[aria-current='page'] {
   color: var(--heat);
 }
 
+.karaoke[aria-pressed='true'] {
+  color: var(--accent-link);
+}
+
+.karaoke-intensity {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+}
+
+.karaoke-intensity__value {
+  min-width: 3ch;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.nowplaying__meta .karaoke {
+  justify-self: start;
+}
+
 @media (max-width: 720px) {
   .player {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1873,9 +1896,9 @@ kbd {
     display: none;
   }
   /* Mini-player keeps play + next; the rest lives on Now Playing. */
-  .transport > :nth-child(1),
-  .transport > :nth-child(2),
-  .transport > :nth-child(5),
+  .player .transport > :nth-child(1),
+  .player .transport > :nth-child(2),
+  .player .transport > :nth-child(5),
   .progress__time,
   .progress .slider,
   .player__right > a.icon-btn {

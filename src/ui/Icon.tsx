@@ -14,6 +14,7 @@ const PATHS = {
   queue: <path d="M4 6h12M4 12h12M4 18h8M18 14l4 3-4 3z" />,
   volume: <path d="M4 9.5v5h3.5l4.5 4v-13l-4.5 4zM15.5 9a4 4 0 010 6M18 6.5a8 8 0 010 11" />,
   lyrics: <path d="M4 6h16M4 11h16M4 16h9M17 15.5a2.5 2.5 0 105 0v-4l-5 1z" />,
+  karaoke: <path d="M12 3a3 3 0 00-3 3v5a3 3 0 006 0V6a3 3 0 00-3-3zM6 11a6 6 0 0012 0M12 17v4M4 4l16 16" />,
   plus: <path d="M12 5v14M5 12h14" />,
   'play-next': <path d="M4 5l9 7-9 7zM18 7v10M15 12h6" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,
@@ -39,6 +40,9 @@ const PATHS = {
       <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="none" />
     </>
   ),
+  home: <path d="M4 10.5L12 4l8 6.5V20h-5.5v-6h-5v6H4z" />,
+  library: <path d="M5 4v16M10 4v16M14.5 4.5l5 15" />,
+  expand: <path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />,
   trash: <path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" />,
 } as const
 

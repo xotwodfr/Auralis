@@ -111,7 +111,7 @@ function HeroStar({ target, name }: { target: StarTarget; name: string }) {
 }
 
 /** Fetches an album's tracks through the query cache (shared with the album page). */
-function useAlbumSongs() {
+export function useAlbumSongs() {
   const queryClient = useQueryClient()
   const credentials = useAuth((s) => s.session?.credentials)
   return useCallback(

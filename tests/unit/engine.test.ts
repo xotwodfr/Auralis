@@ -88,4 +88,64 @@ describe('AudioEngine', () => {
     audio.tick(5)
     expect(events).toEqual([])
   })
+
+  describe('crossfade', () => {
+    afterEach(() => vi.useRealTimers())
+
+    it('the new track takes over, the old one fades out, and its end is not reported', async () => {
+      vi.useFakeTimers()
+      const { audio, engine, events } = setup()
+      engine.load('a', { autoplay: true })
+      await Promise.resolve()
+      engine.load('b', { autoplay: true, fade: 4 })
+      const next = engine.element
+      expect(next).not.toBe(audio)
+      expect(next.volume).toBe(0)
+      vi.advanceTimersByTime(2000)
+      expect(next.volume).toBeGreaterThan(0.5)
+      expect(audio.volume).toBeLessThan(0.9)
+      audio.finish()
+      expect(events.some((e) => e.type === 'ended')).toBe(false)
+      vi.advanceTimersByTime(2500)
+      expect(audio.getAttribute('src')).toBeNull()
+      expect(next.volume).toBe(1)
+    })
+
+    it('loads normally when nothing is playing', () => {
+      const { audio, engine } = setup()
+      engine.load('a', { fade: 4 })
+      expect(engine.element).toBe(audio)
+      expect(audio.src).toBe('a')
+    })
+  })
+
+  describe('karaoke', () => {
+    const karaoke = (events: EngineEvent[]) => events.flatMap((e) => (e.type === 'karaoke' ? [e.state] : []))
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('reports unavailable where Web Audio does not exist', () => {
+      const { engine, events } = setup()
+      engine.setKaraoke(true)
+      expect(karaoke(events)).toEqual(['unavailable'])
+    })
+
+    it('first enable reloads the stream with CORS, and a CORS refusal falls back to plain playback', async () => {
+      vi.stubGlobal('AudioContext', class {})
+      const { audio, engine, events } = setup()
+      engine.load('https://x/stream', { autoplay: true })
+      await Promise.resolve()
+      engine.setKaraoke(true)
+      expect((audio as unknown as HTMLAudioElement).crossOrigin).toBe('anonymous')
+      audio.fail(4)
+      expect(karaoke(events)).toEqual(['on', 'unavailable'])
+      expect((audio as unknown as HTMLAudioElement).crossOrigin).toBeNull()
+      expect(events.some((e) => e.type === 'error')).toBe(false)
+    })
+
+    it('turning it off before it was ever on just reports off', () => {
+      const { engine, events } = setup()
+      engine.setKaraoke(false)
+      expect(karaoke(events)).toEqual(['off'])
+    })
+  })
 })

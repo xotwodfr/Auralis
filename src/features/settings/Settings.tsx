@@ -7,6 +7,7 @@ import { DEFAULT_LYRICS_SERVER, backendBase, checkServerUrl } from '../../lib/ba
 import { SHORTCUTS } from '../../app/shortcuts'
 import { paletteStyle, usePalette } from '../../app/artworkTheme'
 import { THEME_OPTIONS, useTheme } from '../../app/theme'
+import { IS_MOBILE_APP } from '../../app/platform'
 import { useAuth } from '../../state/auth'
 import { useSettings } from '../../state/settings'
 import { useSpotifyLinks } from '../../state/spotifyLinks'
@@ -25,7 +26,7 @@ function Swatch({ theme, style }: { theme: string; style?: Record<string, string
   )
 }
 
-function spicyText(b: ReturnType<typeof useLyricsBackend>, serverOn: boolean): [string, string] {
+export function spicyText(b: ReturnType<typeof useLyricsBackend>, serverOn: boolean): [string, string] {
   if (!serverOn) return ['Off: lyrics server lookup is disabled', 'Off']
   if (b.isPending) return ['Checking…', 'Checking…']
   if (b.isError) return [b.error.message, 'Not available']
@@ -34,7 +35,7 @@ function spicyText(b: ReturnType<typeof useLyricsBackend>, serverOn: boolean): [
 }
 
 /** The lyrics server address: validated, testable, saved locally. Holds no secrets: those live on the server. */
-function LyricsServerForm() {
+export function LyricsServerForm() {
   const saved = useSettings((s) => s.lyricsServerUrl)
   const on = useSettings((s) => s.lyricsServerEnabled)
   const setOn = useSettings((s) => s.setLyricsServerEnabled)
@@ -101,35 +102,18 @@ function LyricsServerForm() {
 
 type Pending = 'disconnect' | 'credentials' | 'lyrics' | null
 
-export default function Settings() {
-  const session = useAuth((s) => s.session)
+const DIALOGS = {
+  disconnect: { title: 'Disconnect?', message: 'You will be signed out and any stored credentials removed from this browser.', label: 'Disconnect' },
+  credentials: { title: 'Clear stored credentials?', message: 'You stay connected now, but will need to sign in again next time.', label: 'Clear credentials' },
+  lyrics: { title: 'Clear cached lyrics?', message: 'Lyrics and Spotify matches will be looked up again the next time you play each track.', label: 'Clear cache' },
+} as const
+
+/** The destructive account/cache actions and their confirmation dialog, shared by the web and phone settings pages. */
+export function useAccountActions() {
   const disconnect = useAuth((s) => s.disconnect)
   const forgetDevice = useAuth((s) => s.forgetDevice)
-  const external = useSettings((s) => s.externalLookups)
-  const setExternal = useSettings((s) => s.setExternalLookups)
-  const reportPlays = useSettings((s) => s.reportPlays)
-  const setReportPlays = useSettings((s) => s.setReportPlays)
-  const theme = useTheme((s) => s.pref)
-  const setTheme = useTheme((s) => s.setPref)
-  const palette = usePalette((s) => s.palette)
   const queries = useQueryClient()
   const [pending, setPending] = useState<Pending>(null)
-  const serverOn = useSettings((s) => s.lyricsServerEnabled)
-  const [spicy, matching] = spicyText(useLyricsBackend(), serverOn)
-  const clearLinks = useSpotifyLinks((s) => s.clear)
-
-  if (!session) return null
-  const { credentials, server, capabilities, remember } = session
-
-  const rows: [string, string][] = [
-    ['Server', credentials.baseUrl],
-    ['User', credentials.username],
-    ['Software', [server.type, server.serverVersion].filter(Boolean).join(' ') || 'Unknown'],
-    ['API version', server.apiVersion],
-    ['OpenSubsonic', capabilities.openSubsonic ? 'Yes' : 'No'],
-    ['Server lyrics', capabilities.songLyrics ? 'Supported' : 'Not available'],
-    ['Credentials stored on this device', remember ? 'Yes' : 'No'],
-  ]
 
   const confirmed = {
     disconnect: () => disconnect().catch(() => toast.error("Couldn't clear the stored credentials from this browser.")),
@@ -149,18 +133,55 @@ export default function Settings() {
       ),
   } as const
 
-  const dialogs = {
-    disconnect: { title: 'Disconnect?', message: 'You will be signed out and any stored credentials removed from this browser.', label: 'Disconnect' },
-    credentials: { title: 'Clear stored credentials?', message: 'You stay connected now, but will need to sign in again next time.', label: 'Clear credentials' },
-    lyrics: { title: 'Clear cached lyrics?', message: 'Lyrics and Spotify matches will be looked up again the next time you play each track.', label: 'Clear cache' },
-  } as const
-  const dialog = pending && dialogs[pending]
+  const dialog = pending && DIALOGS[pending]
+  const confirmDialog =
+    pending && dialog ? (
+      <ConfirmDialog
+        title={dialog.title}
+        message={dialog.message}
+        confirmLabel={dialog.label}
+        onCancel={() => setPending(null)}
+        onConfirm={() => {
+          setPending(null)
+          void confirmed[pending]()
+        }}
+      />
+    ) : null
+  return { setPending, confirmDialog }
+}
+
+export default function Settings() {
+  const session = useAuth((s) => s.session)
+  const external = useSettings((s) => s.externalLookups)
+  const setExternal = useSettings((s) => s.setExternalLookups)
+  const reportPlays = useSettings((s) => s.reportPlays)
+  const setReportPlays = useSettings((s) => s.setReportPlays)
+  const theme = useTheme((s) => s.pref)
+  const setTheme = useTheme((s) => s.setPref)
+  const palette = usePalette((s) => s.palette)
+  const { setPending, confirmDialog } = useAccountActions()
+  const serverOn = useSettings((s) => s.lyricsServerEnabled)
+  const [spicy, matching] = spicyText(useLyricsBackend(), serverOn)
+  const clearLinks = useSpotifyLinks((s) => s.clear)
+
+  if (!session) return null
+  const { credentials, server, capabilities, remember } = session
+
+  const rows: [string, string][] = [
+    ['Server', credentials.baseUrl],
+    ['User', credentials.username],
+    ['Software', [server.type, server.serverVersion].filter(Boolean).join(' ') || 'Unknown'],
+    ['API version', server.apiVersion],
+    ['OpenSubsonic', capabilities.openSubsonic ? 'Yes' : 'No'],
+    ['Server lyrics', capabilities.songLyrics ? 'Supported' : 'Not available'],
+    ['Credentials stored on this device', remember ? 'Yes' : 'No'],
+  ]
 
   return (
     <section className="page">
       <h1 className="page__title">Settings</h1>
 
-      <section className="panel" aria-labelledby="appearance">
+      {!IS_MOBILE_APP && <section className="panel" aria-labelledby="appearance">
         <h2 id="appearance" className="panel__title">
           Appearance
         </h2>
@@ -189,7 +210,7 @@ export default function Settings() {
             Colours follow the cover of the playing track. If your server blocks cross-origin image reads, the default palette is used.
           </p>
         )}
-      </section>
+      </section>}
 
       <section className="panel" aria-labelledby="connection">
         <h2 id="connection" className="panel__title">
@@ -268,7 +289,7 @@ export default function Settings() {
         </div>
       </section>
 
-      <section className="panel" aria-labelledby="shortcuts">
+      {!IS_MOBILE_APP && <section className="panel" aria-labelledby="shortcuts">
         <h2 id="shortcuts" className="panel__title">
           Keyboard shortcuts
         </h2>
@@ -282,20 +303,9 @@ export default function Settings() {
             </div>
           ))}
         </dl>
-      </section>
+      </section>}
 
-      {pending && dialog && (
-        <ConfirmDialog
-          title={dialog.title}
-          message={dialog.message}
-          confirmLabel={dialog.label}
-          onCancel={() => setPending(null)}
-          onConfirm={() => {
-            setPending(null)
-            void confirmed[pending]()
-          }}
-        />
-      )}
+      {confirmDialog}
     </section>
   )
 }
