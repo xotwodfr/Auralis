@@ -89,6 +89,36 @@ describe('AudioEngine', () => {
     expect(events).toEqual([])
   })
 
+  describe('crossfade', () => {
+    afterEach(() => vi.useRealTimers())
+
+    it('the new track takes over, the old one fades out, and its end is not reported', async () => {
+      vi.useFakeTimers()
+      const { audio, engine, events } = setup()
+      engine.load('a', { autoplay: true })
+      await Promise.resolve()
+      engine.load('b', { autoplay: true, fade: 4 })
+      const next = engine.element
+      expect(next).not.toBe(audio)
+      expect(next.volume).toBe(0)
+      vi.advanceTimersByTime(2000)
+      expect(next.volume).toBeGreaterThan(0.5)
+      expect(audio.volume).toBeLessThan(0.9)
+      audio.finish()
+      expect(events.some((e) => e.type === 'ended')).toBe(false)
+      vi.advanceTimersByTime(2500)
+      expect(audio.getAttribute('src')).toBeNull()
+      expect(next.volume).toBe(1)
+    })
+
+    it('loads normally when nothing is playing', () => {
+      const { audio, engine } = setup()
+      engine.load('a', { fade: 4 })
+      expect(engine.element).toBe(audio)
+      expect(audio.src).toBe('a')
+    })
+  })
+
   describe('karaoke', () => {
     const karaoke = (events: EngineEvent[]) => events.flatMap((e) => (e.type === 'karaoke' ? [e.state] : []))
     afterEach(() => vi.unstubAllGlobals())

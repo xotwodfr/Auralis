@@ -3,7 +3,6 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import { getAlbum, getAlbumList2, getArtist, getArtists, getPlaylist, getPlaylists, getStarred2, search3, type AlbumListType } from '../api/subsonic/endpoints'
 import { Boundary, Cover, useAlbumSongs } from '../features/library/components'
 import { useLibraryQuery, usePagedQuery } from '../features/library/queries'
-import Settings from '../features/settings/Settings'
 import { formatDuration } from '../lib/format'
 import { useAuth } from '../state/auth'
 import { Icon } from '../ui/Icon'
@@ -416,17 +415,6 @@ export function LikedPage() {
           </Shelf>
         )}
       </Boundary>
-    </div>
-  )
-}
-
-export function SettingsPage() {
-  return (
-    <div className="m-page m-page--settings">
-      <header className="m-top m-top--sticky">
-        <BackButton />
-      </header>
-      <Settings />
     </div>
   )
 }

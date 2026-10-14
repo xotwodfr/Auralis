@@ -1,4 +1,4 @@
-import { coverArtUrl, mapAlbum, mapSong } from '../../src/api/subsonic/endpoints'
+import { coverArtUrl, mapAlbum, mapSong, streamUrl } from '../../src/api/subsonic/endpoints'
 import { formatDuration } from '../../src/lib/format'
 
 describe('mappers', () => {
@@ -18,6 +18,14 @@ describe('coverArtUrl', () => {
     expect(coverArtUrl(c, 'x1', 96)).not.toBe(url)
     const q = new URL(url).searchParams
     expect([q.get('id'), q.get('size'), q.has('p')]).toEqual(['x1', '300', false])
+  })
+})
+
+describe('streamUrl', () => {
+  const c = { baseUrl: 'https://m.test', username: 'u', password: 'p' }
+  it('asks for a bitrate ceiling only when one is given', () => {
+    expect(new URL(streamUrl(c, 's1')).searchParams.has('maxBitRate')).toBe(false)
+    expect(new URL(streamUrl(c, 's1', 192)).searchParams.get('maxBitRate')).toBe('192')
   })
 })
 

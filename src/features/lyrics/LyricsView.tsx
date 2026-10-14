@@ -6,6 +6,7 @@ import { LyricsError, type LyricLine, type LyricWord, type Lyrics, type LyricsTr
 import { formatDuration } from '../../lib/format'
 import { NO_SPOTIFY, parseSpotifyTrackId, linkKey, useSpotifyLinks } from '../../state/spotifyLinks'
 import { useAuth } from '../../state/auth'
+import { useSettings } from '../../state/settings'
 import { playbackTime, usePlayback } from '../../state/playback'
 import { EmptyState, ErrorState } from '../../ui/State'
 import { useLyrics } from './useLyrics'
@@ -47,17 +48,18 @@ type LineState = 'past' | 'active' | 'next'
 
 /** Memoized: an active-line change re-renders only the two lines whose state changed. */
 const Line = memo(function Line({ line, index, state, onSeek }: { line: LyricLine; index: number; state: LineState; onSeek: (i: number) => void }) {
+  const wordSync = useSettings((s) => s.lyricsWordSync)
   if (!line.text) {
     // An instrumental gap in LRC: a quiet marker while it is "sung", nothing otherwise.
     return <li data-line={index} aria-hidden className={`lyric lyric--gap lyric--${state}`} />
   }
   return (
-    <li data-line={index} className={`lyric lyric--${state}${line.opposite ? ' lyric--opposite' : ''}${line.words ? ' lyric--timed' : ''}`}>
+    <li data-line={index} className={`lyric lyric--${state}${line.opposite ? ' lyric--opposite' : ''}${line.words && wordSync ? ' lyric--timed' : ''}`}>
       <button type="button" className="lyric__btn" aria-label={line.text} aria-current={state === 'active' || undefined} onClick={() => onSeek(index)}>
-        <span className="lyric__lead">{line.words ? <Words words={line.words} /> : line.text}</span>
+        <span className="lyric__lead">{line.words && wordSync ? <Words words={line.words} /> : line.text}</span>
         {line.background?.map((b, j) => (
           <span key={j} className="lyric__bg">
-            {b.words ? <Words words={b.words} /> : b.text}
+            {b.words && wordSync ? <Words words={b.words} /> : b.text}
           </span>
         ))}
       </button>

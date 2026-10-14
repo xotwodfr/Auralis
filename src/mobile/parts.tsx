@@ -8,23 +8,25 @@ import { Cover, StarButton } from '../features/library/components'
 import { isStarred, useStarred, type StarTarget } from '../features/library/starred'
 import { TrackActions } from '../features/library/TrackActions'
 import { useAuth } from '../state/auth'
+import { useSettings } from '../state/settings'
 import { usePlayback } from '../state/playback'
 import { Icon } from '../ui/Icon'
 
 /** The cover's dominant hue as a dark, saturated tint for gradients; undefined until known (CSS falls back to grey). */
 export function useCoverTint(coverArt: string | undefined, lightness = 32): string | undefined {
   const credentials = useAuth((s) => s.session?.credentials)
+  const adaptive = useSettings((s) => s.adaptiveColors)
   // Tagged with the cover it belongs to, so a stale hue never shows while the next cover is decoding.
   const [found, setFound] = useState<{ cover: string; hue: number | null } | null>(null)
   useEffect(() => {
-    if (!credentials || !coverArt) return
+    if (!adaptive || !credentials || !coverArt) return
     let live = true
     void paletteFor(credentials, coverArt).then((p) => live && setFound({ cover: coverArt, hue: p?.hue ?? null }))
     return () => {
       live = false
     }
-  }, [credentials, coverArt])
-  const hue = found && found.cover === coverArt ? found.hue : null
+  }, [adaptive, credentials, coverArt])
+  const hue = adaptive && found && found.cover === coverArt ? found.hue : null
   return hue === null ? undefined : `hsl(${Math.round(hue)} 45% ${lightness}%)`
 }
 
@@ -34,7 +36,8 @@ export const tintStyle = (tint: string | undefined) => (tint ? ({ '--tint': tint
 export function Backdrop() {
   const credentials = useAuth((s) => s.session?.credentials)
   const cover = usePlayback((s) => currentEntry(s.queue)?.track.coverArt)
-  const src = credentials && cover ? coverArtUrl(credentials, cover, 160) : undefined
+  const adaptive = useSettings((s) => s.adaptiveColors)
+  const src = adaptive && credentials && cover ? coverArtUrl(credentials, cover, 160) : undefined
   // A failed load must not leave a broken-image icon over the page.
   const [bad, setBad] = useState<string>()
   if (!src || bad === src) return null

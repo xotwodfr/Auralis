@@ -3,6 +3,7 @@
 // (below BASS_HZ) untouched and scales the rest by (1 - amount), with an extra dip across the vocal band. So at
 // amount 0 it is the original, at 1 it is plain L-R cancellation, and in between kick and bass survive.
 // The original path stays connected and is crossfaded, so toggling never clicks or interrupts playback.
+// The graph also holds the equaliser, which runs before the vocal remover, so both share one routed audio source.
 
 export type KaraokeState = 'off' | 'on' | 'mono' | 'unavailable'
 
@@ -12,6 +13,8 @@ const VOCAL_HZ = 2200 // centre of the 1-3.5 kHz vocal presence band
 const VOCAL_Q = 0.6
 const VOCAL_DIP_DB = 12 // extra cut at the centre of the band at full amount
 export const DEFAULT_AMOUNT = 0.6
+export const EQ_FREQS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
+export const EQ_RANGE_DB = 12
 const POLL_MS = 500
 const MIN_LEVEL = 0.005 // below this the track is silent, so there is nothing to judge
 const MONO_RATIO = 0.003 // side/mid energy under this (about -50 dB) means L == R
@@ -81,12 +84,20 @@ export function setAmount(c: BaseAudioContext, m: { rest: GainNode; dip: BiquadF
   m.dip.gain.setTargetAtTime(-VOCAL_DIP_DB * a, c.currentTime, RAMP_S)
 }
 
-export class VocalRemover {
+export class AudioGraph {
   static get supported() {
     return typeof AudioContext !== 'undefined'
   }
 
   private ctx = new AudioContext()
+  private input = this.ctx.createGain()
+  private eq = EQ_FREQS.map((f, i) => {
+    const b = this.ctx.createBiquadFilter()
+    b.type = i === 0 ? 'lowshelf' : i === EQ_FREQS.length - 1 ? 'highshelf' : 'peaking'
+    b.frequency.value = f
+    b.Q.value = 1.1
+    return b
+  })
   private dry = this.ctx.createGain()
   private wet = this.ctx.createGain()
   private mid = this.ctx.createAnalyser()
@@ -98,27 +109,40 @@ export class VocalRemover {
   private quiet = 0
   private timer: ReturnType<typeof setInterval> | undefined
 
-  /** Throws if the element cannot be routed (already attached, or cross-origin without CORS). */
   constructor(
-    element: HTMLMediaElement,
     amount: number,
     private onState: (state: KaraokeState) => void,
   ) {
     const c = this.ctx
-    const src = c.createMediaElementSource(element)
-    this.matrix = buildMatrix(c, src, this.wet)
+    const pre = c.createGain()
+    let tail: AudioNode = this.input
+    for (const b of this.eq) tail = tail.connect(b)
+    tail.connect(pre)
+    this.matrix = buildMatrix(c, pre, this.wet)
     this.matrix.side.connect(this.side)
     this.wet.gain.value = 0
-    src.connect(this.dry).connect(c.destination)
-    src.connect(this.mid)
+    pre.connect(this.dry).connect(c.destination)
+    pre.connect(this.mid)
     this.wet.connect(c.destination)
     this.setAmount(amount)
+  }
+
+  /** Routes an element through the graph. Throws if it is already routed, or is cross-origin without CORS. */
+  attach(element: HTMLMediaElement): void {
+    this.ctx.createMediaElementSource(element).connect(this.input)
+  }
+
+  /** Band gains in dB, one per `EQ_FREQS`; all zero is flat. Smoothed, so dragging does not zipper. */
+  setEq(gains: readonly number[]): void {
+    this.eq.forEach((b, i) => {
+      const g = Math.min(EQ_RANGE_DB, Math.max(-EQ_RANGE_DB, gains[i] ?? 0))
+      b.gain.setTargetAtTime(g, this.ctx.currentTime, RAMP_S)
+    })
   }
 
   setAmount(amount: number): void {
     setAmount(this.ctx, this.matrix, amount)
   }
-
   /** Browsers start contexts suspended until a user gesture, and may suspend them again. */
   resume(): void {
     if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined)

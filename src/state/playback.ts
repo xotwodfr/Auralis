@@ -3,13 +3,13 @@ import { coverArtUrl, ping, scrobble, streamUrl } from '../api/subsonic/endpoint
 import { SubsonicError } from '../api/subsonic/errors'
 import type { Song } from '../api/subsonic/types'
 import { toast } from './toast'
-import { DEFAULT_AMOUNT, type KaraokeState } from '../audio/karaoke'
+import { DEFAULT_AMOUNT, type KaraokeState } from '../audio/dsp'
 import { AudioEngine, type EngineErrorKind, type PlayStatus } from '../audio/engine'
 import { setMediaHandlers, setMediaInfo } from '../audio/mediaSession'
 import { currentEntry, initialQueue, nextIndex, previousIndex, queueReducer, type QueueAction, type QueueState, type Repeat } from '../audio/queue'
 import { kvDelete, kvGet, kvSet } from '../lib/storage'
 import { useAuth } from './auth'
-import { useSettings } from './settings'
+import { STREAM_BITRATE, useSettings } from './settings'
 
 const KEY = 'playback'
 const RESTART_THRESHOLD_S = 3
@@ -90,6 +90,10 @@ let lastPositionSave = 0
 /** Queue entry keys already reported, so a repeat or a seek can't report the same play twice. */
 let announced: number | undefined
 let submitted: number | undefined
+/** Crossfade length for the next `loadCurrent`, set only by the automatic advance near the end of a track. */
+let pendingFade = 0
+/** Queue entry the crossfade already started for, so it fires once per track. */
+let fadedFor: number | undefined
 
 const credentials = () => useAuth.getState().session?.credentials
 const scope = () => {
@@ -102,6 +106,8 @@ export const usePlayback = create<PlaybackState>()((set, get) => {
   const currentKey = () => currentEntry(get().queue)?.key
 
   function loadCurrent(autoplay: boolean, position = 0) {
+    const fade = pendingFade
+    pendingFade = 0
     const entry = currentEntry(get().queue)
     if (!entry) {
       engine.stop()
@@ -117,7 +123,7 @@ export const usePlayback = create<PlaybackState>()((set, get) => {
     }
     loaded = true
     set({ status: 'loading', autoplay, position, duration: entry.track.duration, error: null })
-    engine.load(streamUrl(c, entry.track.id), { autoplay, position })
+    engine.load(streamUrl(c, entry.track.id, STREAM_BITRATE[useSettings.getState().streamQuality]), { autoplay, position, fade })
   }
 
   /** After a queue edit: load whatever is now current if it changed. */
@@ -328,6 +334,22 @@ async function diagnose(kind: EngineErrorKind) {
   }
 }
 
+/** Near the end of a track, with crossfade on, move to the next entry now; the engine overlaps the two streams. */
+function startCrossfade(position: number, duration: number) {
+  const seconds = useSettings.getState().crossfadeSeconds
+  const s = usePlayback.getState()
+  if (!seconds || duration <= 0 || !s.autoplay || s.status !== 'playing') return
+  const fade = Math.min(seconds, duration / 2)
+  if (duration - position > fade) return
+  const entry = currentEntry(s.queue)
+  if (!entry || fadedFor === entry.key) return
+  const idx = nextIndex(s.queue, false)
+  if (idx === null || idx === s.queue.index) return // end of queue, or repeat-one
+  fadedFor = entry.key
+  pendingFade = fade
+  s.jump(idx)
+}
+
 engine.subscribe((e) => {
   const { setState: set, getState: get } = usePlayback
   switch (e.type) {
@@ -338,6 +360,7 @@ engine.subscribe((e) => {
     case 'time':
       set({ position: e.position, ...(e.duration > 0 && { duration: e.duration }) })
       reportProgress(e.position)
+      startCrossfade(e.position, e.duration)
       if (Date.now() - lastPositionSave > POSITION_SAVE_MS) save()
       break
     case 'ended': {
@@ -356,11 +379,20 @@ engine.subscribe((e) => {
       }
       set({ karaoke: e.state })
       break
+    case 'eq-unavailable':
+      useSettings.getState().setEqEnabled(false)
+      toast.error('The equaliser needs a server that allows cross-origin audio (CORS).')
+      break
     case 'error':
       set({ autoplay: false })
       void diagnose(e.kind)
       break
   }
+})
+
+// The equaliser lives in settings; the engine follows it.
+useSettings.subscribe((s, prev) => {
+  if (s.eqEnabled !== prev.eqEnabled || s.eqGains !== prev.eqGains) engine.setEq(s.eqEnabled, s.eqGains)
 })
 
 // Persist queue/volume edits (debounced), publish OS media info, and drop everything on disconnect.

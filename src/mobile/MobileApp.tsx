@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Navigate, NavLink, Outlet, Route, Routes, useLocation, type Location } from 'react-router'
+import { useSettings } from '../state/settings'
 import ErrorBoundary from '../app/ErrorBoundary'
 import Connect from '../features/connect/Connect'
 import { ToastRegion } from '../ui/Toast'
@@ -7,13 +8,22 @@ import { Icon, type IconName } from '../ui/Icon'
 import MiniPlayer from './MiniPlayer'
 import Player from './Player'
 import { Backdrop } from './parts'
-import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage, SettingsPage } from './pages'
+import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage } from './pages'
+import SettingsPage from './SettingsPage'
 
 const TABS: { to: string; label: string; icon: IconName; match: (path: string) => boolean }[] = [
   { to: '/home', label: 'Home', icon: 'home', match: (p) => p === '/home' || p.startsWith('/browse') },
   { to: '/search', label: 'Search', icon: 'search', match: (p) => p === '/search' },
   { to: '/library', label: 'Your Library', icon: 'library', match: (p) => p.startsWith('/library') || p === '/settings' },
 ]
+
+/** Lyric size is a CSS hook on <html>, so every lyrics view follows it. */
+function useLyricSize() {
+  const size = useSettings((s) => s.lyricSize)
+  useEffect(() => {
+    document.documentElement.dataset.lyricSize = size
+  }, [size])
+}
 
 function Shell() {
   const { pathname } = useLocation()
@@ -59,6 +69,7 @@ export default function MobileApp({ signedIn }: { signedIn: boolean }) {
 
 /** Now Playing is a modal route: the page underneath stays mounted (and keeps its scroll), and Back closes it. */
 function SignedIn() {
+  useLyricSize()
   const location = useLocation()
   const playerOpen = location.pathname === '/now-playing'
   const background = (location.state as { background?: Location } | null)?.background

@@ -1260,3 +1260,267 @@
   background: #fff;
   border: 0;
 }
+
+/* Settings: iOS/Spotify-style grouped cards. */
+.m-settings {
+  animation: m-slide 0.28s var(--m-ease);
+}
+
+@keyframes m-slide {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.m-settings .m-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.m-set {
+  margin-top: 24px;
+}
+
+.m-set__title {
+  margin: 0 0 8px 4px;
+  color: var(--text-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.m-set__card {
+  overflow: hidden;
+  background: rgba(30, 30, 30, 0.62);
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+}
+
+.m-set__card > * + * {
+  border-top: 1px solid var(--hairline);
+}
+
+.m-set__block {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 12px;
+}
+
+.m-set__block > :not(.m-set__row) {
+  margin: 0 16px;
+}
+
+.m-set__block .m-set__row {
+  border: 0;
+}
+
+.m-set__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 16px;
+  color: var(--text);
+  text-align: left;
+  background: none;
+  border: 0;
+}
+
+.m-set__row--button {
+  cursor: pointer;
+}
+
+.m-set__row--button:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.m-set__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+
+.m-set__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.m-set__label {
+  font-size: 0.9375rem;
+}
+
+.m-set__label--danger {
+  color: #f15e6c;
+}
+
+.m-set__hint {
+  color: var(--text-2);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.m-set__value {
+  max-width: 55%;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-set__form {
+  padding: 12px 16px;
+}
+
+.m-set__form > * {
+  margin: 0;
+}
+
+[data-platform='mobile'] .m-set .segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+[data-platform='mobile'] .m-set .segmented__item {
+  display: grid;
+  gap: 0;
+  padding: 8px 4px;
+  color: var(--text);
+  text-align: center;
+  background: none;
+  border: 0;
+  border-radius: 9px;
+}
+
+[data-platform='mobile'] .m-set .segmented__item[aria-checked='true'] {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-platform='mobile'] .m-set .segmented__caption {
+  color: var(--text-2);
+  font-size: 0.6875rem;
+}
+
+.m-switch {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.25);
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s var(--m-ease);
+}
+
+.m-switch span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s var(--m-ease);
+}
+
+.m-switch[aria-checked='true'] {
+  background: var(--accent);
+}
+
+.m-switch[aria-checked='true'] span {
+  transform: translateX(20px);
+}
+
+/* Lyrics size, applied to every lyrics view in the phone UI. */
+:root[data-platform='mobile'][data-lyric-size='small'] .lyric__btn {
+  font-size: 1.25rem;
+}
+
+:root[data-platform='mobile'][data-lyric-size='large'] .lyric__btn {
+  font-size: 2.125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-settings {
+    animation: none;
+  }
+}
+
+/* Equalizer */
+.m-eq {
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.m-eq__presets {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.m-eq__presets .m-chip {
+  flex: none;
+}
+
+.m-eq__presets .m-chip[aria-pressed='true'] {
+  color: #000;
+  background: #fff;
+}
+
+.m-eq__bands {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+}
+
+.m-eq__band {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-eq__db {
+  min-height: 1em;
+}
+
+.m-eq__slider {
+  width: 28px;
+  height: 140px;
+  margin: 0;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  accent-color: #fff;
+  background: none;
+}
+
+.m-eq__reset {
+  justify-self: start;
+}
+
+.m-set__block > .slider {
+  width: calc(100% - 32px);
+}

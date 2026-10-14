@@ -179,9 +179,11 @@ export function coverArtUrl(c: Credentials, id: string, size: number): string {
 
 /**
  * Audio URL for `<audio src>`. It carries the hashed token (`t`/`s`), never the password, and a fresh salt per load.
+ * `maxBitRate` (kbps) asks the server to transcode down; omit it for the original file.
  * Known limitation: the token is visible in the browser's network tools and server logs, since media elements can't send headers.
  */
-export const streamUrl = (c: Credentials, id: string): string => buildUrl(c.baseUrl, 'stream', auth(c), { id })
+export const streamUrl = (c: Credentials, id: string, maxBitRate?: number): string =>
+  buildUrl(c.baseUrl, 'stream', auth(c), maxBitRate ? { id, maxBitRate } : { id })
 
 /** OpenSubsonic `songLyrics` extension. */
 export async function getLyricsBySongId(c: Credentials, id: string, signal?: AbortSignal): Promise<StructuredLyrics[]> {
