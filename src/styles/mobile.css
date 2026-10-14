@@ -66,6 +66,7 @@
   background: none;
 }
 
+[data-platform='mobile'] .karaoke[aria-pressed='true'],
 [data-platform='mobile'] .star[aria-pressed='true'] {
   color: var(--accent);
 }
@@ -883,44 +884,44 @@
   font-variant-numeric: tabular-nums;
 }
 
-.m-player .transport {
+:is(.m-player, .m-lyricsfull) .transport {
   justify-content: space-between;
   margin: 8px -10px 0;
 }
 
-.m-player .transport .icon-btn {
+:is(.m-player, .m-lyricsfull) .transport .icon-btn {
   width: 48px;
   height: 48px;
   color: var(--text);
 }
 
-.m-player .transport .icon-btn[aria-pressed='true'] {
+:is(.m-player, .m-lyricsfull) .transport .icon-btn[aria-pressed='true'] {
   color: var(--accent);
 }
 
-.m-player .transport .icon-btn svg {
+:is(.m-player, .m-lyricsfull) .transport .icon-btn svg {
   width: 30px;
   height: 30px;
 }
 
-.m-player .transport .icon-btn:first-child svg,
-.m-player .transport .icon-btn:last-child svg {
+:is(.m-player, .m-lyricsfull) .transport .icon-btn:first-child svg,
+:is(.m-player, .m-lyricsfull) .transport .icon-btn:last-child svg {
   width: 24px;
   height: 24px;
 }
 
-.m-player .transport .icon-btn--main {
+:is(.m-player, .m-lyricsfull) .transport .icon-btn--main {
   width: 68px;
   height: 68px;
   color: #000;
   background: #fff;
 }
 
-.m-player .transport .icon-btn--main:hover:not(:disabled) {
+:is(.m-player, .m-lyricsfull) .transport .icon-btn--main:hover:not(:disabled) {
   background: #fff;
 }
 
-.m-player .transport .icon-btn--main svg {
+:is(.m-player, .m-lyricsfull) .transport .icon-btn--main svg {
   width: 30px;
   height: 30px;
 }
@@ -975,15 +976,14 @@
   cursor: pointer;
 }
 
-/* Fullscreen lyrics: only the lyrics, a seek bar and play/pause. */
+/* Fullscreen lyrics, laid out like Apple Music: top bar, track row, big lyrics, seek, transport, tabs. */
 .m-lyricsfull {
-  --np-h: calc(100dvh - var(--m-top-pad) - 64px - 132px - max(env(safe-area-inset-bottom, 0px), 8px));
   position: fixed;
   inset: 0;
   z-index: 9;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--m-top-pad) + 4px) 16px max(env(safe-area-inset-bottom, 0px), 8px);
+  padding: calc(var(--m-top-pad) + 4px) 20px max(env(safe-area-inset-bottom, 0px), 8px);
   background: #121212;
   animation: m-rise 0.3s var(--m-ease);
 }
@@ -991,28 +991,47 @@
 .m-lyricsfull__bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 64px;
-  margin: 0 -8px;
+  justify-content: space-between;
+  gap: 12px;
+  height: 48px;
 }
 
-.m-lyricsfull__title {
-  display: grid;
+.m-lyricsfull__bar .m-round {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.m-lyricsfull__album {
   flex: 1;
   min-width: 0;
-  line-height: 1.3;
-}
-
-.m-lyricsfull__title strong,
-.m-lyricsfull__title span {
   overflow: hidden;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.m-lyricsfull__title span {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.8125rem;
+.m-lyricsfull__track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 4px;
+}
+
+.m-lyricsfull__track .m-thumb {
+  width: 52px;
+}
+
+.m-lyricsfull__track .m-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.m-lyricsfull__track .m-text__title {
+  font-size: 1.125rem;
+  font-weight: 700;
 }
 
 .m-lyricsfull .star {
@@ -1023,26 +1042,92 @@
   color: var(--accent);
 }
 
+/* The lyrics take all the room that is left; the karaoke button floats over their bottom-right corner. */
+.m-lyricsfull__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0 -8px;
+}
+
+.m-lyricsfull__body .lyrics-stage {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
 .m-lyricsfull .lyric__btn {
   font-size: 1.75rem;
 }
 
+/* Lines other than the one being sung are out of focus. */
+.m-lyricsfull .lyric:not(.lyric--active) .lyric__btn {
+  filter: blur(1.5px);
+  opacity: 0.55;
+}
+
+/* Source credit stays (provider attribution); the follow switch and match picker live in the inline card. */
+.m-lyricsfull .lyrics-follow,
+.m-lyricsfull .spicy {
+  display: none;
+}
+
+.m-lyricsfull .lyrics-stage__footer {
+  min-height: 0;
+  padding: 0 8px;
+  font-size: 0.6875rem;
+}
+
+.m-round--glass {
+  position: absolute;
+  right: 8px;
+  bottom: 40px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(12px);
+}
+
 .m-lyricsfull__foot {
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 4px 12px;
-  min-height: 132px;
+  gap: 4px;
 }
 
-.m-lyricsfull__foot .m-seek {
-  grid-column: 1 / -1;
+.m-lyricsfull .transport .icon-btn--main {
+  color: #fff;
+  background: none;
 }
 
-.m-lyricsfull__foot .m-play {
-  justify-self: center;
-  grid-column: 1 / -1;
-  background: #fff;
+.m-lyricsfull .transport .icon-btn--main:hover:not(:disabled) {
+  background: none;
+}
+
+.m-lyricsfull .transport .icon-btn--main svg {
+  width: 44px;
+  height: 44px;
+}
+
+.m-lyricsfull .transport .icon-btn--main {
+  width: 68px;
+  height: 68px;
+}
+
+.m-lyricsfull__tabs {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 4px;
+}
+
+.m-lyricsfull__tabs .icon-btn {
+  width: 56px;
+  height: 44px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.m-lyricsfull__tabs .icon-btn[aria-pressed='true'] {
+  color: var(--accent);
 }
 
 /* Queue: a full-screen sheet over the player. */

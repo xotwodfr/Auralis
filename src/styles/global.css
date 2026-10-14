@@ -1054,6 +1054,14 @@ a.icon-btn[aria-current='page'] {
   color: var(--heat);
 }
 
+.karaoke[aria-pressed='true'] {
+  color: var(--accent-link);
+}
+
+.nowplaying__meta .karaoke {
+  justify-self: start;
+}
+
 @media (max-width: 720px) {
   .player {
     grid-template-columns: minmax(0, 1fr) auto;

@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { coverArtUrl, ping, scrobble, streamUrl } from '../api/subsonic/endpoints'
 import { SubsonicError } from '../api/subsonic/errors'
 import type { Song } from '../api/subsonic/types'
+import { toast } from './toast'
+import type { KaraokeState } from '../audio/karaoke'
 import { AudioEngine, type EngineErrorKind, type PlayStatus } from '../audio/engine'
 import { setMediaHandlers, setMediaInfo } from '../audio/mediaSession'
 import { currentEntry, initialQueue, nextIndex, previousIndex, queueReducer, type QueueAction, type QueueState, type Repeat } from '../audio/queue'
@@ -43,6 +45,8 @@ interface PlaybackState {
   duration: number
   volume: number
   error: PlaybackError | null
+  /** Vocal remover: `mono` = on, but the track is mono so it is bypassed; `unavailable` = this server or browser can't do it. */
+  karaoke: KaraokeState
 
   playTracks: (tracks: Song[], start?: number) => void
   shufflePlay: (tracks: Song[]) => void
@@ -57,6 +61,7 @@ interface PlaybackState {
   previous: () => void
   seek: (seconds: number) => void
   setVolume: (volume: number) => void
+  setKaraoke: (on: boolean) => void
   setShuffle: (on: boolean) => void
   cycleRepeat: () => void
   retry: () => void
@@ -115,6 +120,7 @@ export const usePlayback = create<PlaybackState>()((set, get) => {
     duration: 0,
     volume: 1,
     error: null,
+    karaoke: 'off',
 
     playTracks(tracks, start = 0) {
       if (!tracks.length) return
@@ -179,6 +185,7 @@ export const usePlayback = create<PlaybackState>()((set, get) => {
       engine.setVolume(v)
       set({ volume: v })
     },
+    setKaraoke: (on) => engine.setKaraoke(on),
     setShuffle: (on) => apply({ type: 'setShuffle', on }),
     cycleRepeat() {
       const order: Repeat[] = ['off', 'all', 'one']
@@ -318,6 +325,13 @@ engine.subscribe((e) => {
       } else get().jump(idx)
       break
     }
+    case 'karaoke':
+      if (e.state !== get().karaoke) {
+        if (e.state === 'mono') toast.info('Mono track: vocals can’t be removed from it.')
+        if (e.state === 'unavailable') toast.error('Karaoke mode needs a server that allows cross-origin audio (CORS).')
+      }
+      set({ karaoke: e.state })
+      break
     case 'error':
       set({ autoplay: false })
       void diagnose(e.kind)

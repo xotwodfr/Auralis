@@ -1,6 +1,8 @@
 // Framework-free wrapper around HTMLAudioElement. Playback lives here, outside React, so route
 // changes and re-renders can never interrupt it.
 
+import { VocalRemover, type KaraokeState } from './karaoke'
+
 export type PlayStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'buffering' | 'ended' | 'error'
 
 /** `blocked`: the browser refused to start playback without a user gesture. */
@@ -11,6 +13,7 @@ export type EngineEvent =
   | { type: 'time'; position: number; duration: number }
   | { type: 'ended' }
   | { type: 'error'; kind: EngineErrorKind }
+  | { type: 'karaoke'; state: KaraokeState }
 
 type Listener = (event: EngineEvent) => void
 
@@ -24,6 +27,10 @@ export class AudioEngine {
   /** True from a source change until `loadstart`; stray `pause` events in between are not real pauses. */
   private switching = false
   private startAt = 0
+  private remover: VocalRemover | null = null
+  private wantKaraoke = false
+  /** Web Audio only gets samples from a cross-origin stream that was fetched with CORS, so that is requested lazily. */
+  private cors = false
 
   constructor(element: HTMLAudioElement = new Audio()) {
     this.element = element
@@ -35,6 +42,7 @@ export class AudioEngine {
         this.emit({ type: 'status', status: 'loading' })
       },
       loadedmetadata: () => {
+        if (this.cors) this.attachRemover()
         if (this.startAt > 0) el.currentTime = this.startAt
         this.startAt = 0
         this.emitTime()
@@ -55,6 +63,14 @@ export class AudioEngine {
       error: () => {
         const kind = KIND_BY_MEDIA_ERROR[el.error?.code ?? 0]
         if (!kind || !el.getAttribute('src')) return
+        if (this.cors && !this.remover) {
+          // The server refused a CORS fetch: play normally and tell the user karaoke cannot work here.
+          this.cors = false
+          this.wantKaraoke = false
+          this.emit({ type: 'karaoke', state: 'unavailable' })
+          this.reload()
+          return
+        }
         this.emit({ type: 'status', status: 'error' })
         this.emit({ type: 'error', kind })
       },
@@ -76,12 +92,43 @@ export class AudioEngine {
     this.switching = !el.paused
     this.startAt = position
     el.pause()
+    el.crossOrigin = this.cors ? 'anonymous' : null
     el.src = url
     el.load()
     if (autoplay) void this.play()
   }
 
+  /** Turns the vocal remover on or off. The first time on, the current stream is reloaded once with CORS. */
+  setKaraoke(on: boolean): void {
+    this.wantKaraoke = on
+    if (!on) return this.remover ? this.remover.setActive(false) : this.emit({ type: 'karaoke', state: 'off' })
+    if (!VocalRemover.supported) return this.emit({ type: 'karaoke', state: 'unavailable' })
+    if (this.remover) return this.remover.setActive(true)
+    this.cors = true
+    this.emit({ type: 'karaoke', state: 'on' })
+    this.reload()
+  }
+
+  private reload() {
+    const el = this.element
+    const url = el.getAttribute('src')
+    if (url) this.load(url, { autoplay: !el.paused, position: el.currentTime })
+  }
+
+  private attachRemover() {
+    if (this.remover) return
+    try {
+      this.remover = new VocalRemover(this.element, (state) => this.emit({ type: 'karaoke', state }))
+      this.remover.setActive(this.wantKaraoke)
+    } catch {
+      this.cors = false
+      this.wantKaraoke = false
+      this.emit({ type: 'karaoke', state: 'unavailable' })
+    }
+  }
+
   async play(): Promise<void> {
+    this.remover?.resume()
     try {
       await this.element.play()
     } catch (e) {

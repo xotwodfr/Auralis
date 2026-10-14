@@ -3,17 +3,20 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
 import { currentEntry, nextIndex } from '../audio/queue'
 import { Cover, StarButton } from '../features/library/components'
+import { TrackActions } from '../features/library/TrackActions'
 import { isStarred, useStarred } from '../features/library/starred'
 import LyricsView from '../features/lyrics/LyricsView'
 import QueuePanel from '../features/queue/QueuePanel'
 import { formatDuration } from '../lib/format'
 import { usePlayback } from '../state/playback'
 import { Icon } from '../ui/Icon'
+import { KaraokeButton } from '../ui/KaraokeButton'
 import { Slider } from '../ui/Slider'
 import { TransportControls } from '../ui/TransportControls'
 import { Backdrop, tintStyle, useCoverTint } from './parts'
 
-function Seek() {
+/** `remaining`: show the time left as -m:ss on the right, like Apple Music. */
+function Seek({ remaining = false }: { remaining?: boolean }) {
   const position = usePlayback((s) => s.position)
   const duration = usePlayback((s) => s.duration)
   const seek = usePlayback((s) => s.seek)
@@ -29,7 +32,7 @@ function Seek() {
       />
       <div className="m-seek__times">
         <span>{formatDuration(position)}</span>
-        <span>{formatDuration(duration)}</span>
+        <span>{remaining ? `-${formatDuration(Math.max(0, duration - position))}` : formatDuration(duration)}</span>
       </div>
     </div>
   )
@@ -47,6 +50,7 @@ export default function Player() {
   const ids = useStarred()
   const tint = useCoverTint(track?.coverArt, 30)
   const [queueOpen, setQueueOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const closeButton = useRef<HTMLButtonElement>(null)
   // The mini-player's lyrics button opens straight into the fullscreen lyrics.
   const [lyricsOpen, setLyricsOpen] = useState((useLocation().state as { lyrics?: boolean } | null)?.lyrics === true)
@@ -62,6 +66,21 @@ export default function Player() {
   }, [])
 
   const playing = s.status === 'playing' || s.status === 'buffering' || (s.status === 'loading' && s.autoplay)
+  const transport = (
+    <TransportControls
+      playing={playing}
+      busy={s.status === 'loading' || s.status === 'buffering'}
+      canPrev={s.queue.items.length > 0}
+      canNext={nextIndex(s.queue, true) !== null}
+      shuffle={s.queue.shuffle}
+      repeat={s.queue.repeat}
+      onToggle={s.togglePlay}
+      onPrev={s.previous}
+      onNext={s.next}
+      onShuffle={() => s.setShuffle(!s.queue.shuffle)}
+      onRepeat={s.cycleRepeat}
+    />
+  )
   return (
     <div className="m-player" role="dialog" aria-modal="true" aria-label="Now Playing" style={tintStyle(tint)}>
       <Backdrop />
@@ -73,6 +92,7 @@ export default function Player() {
           <span>Playing from</span>
           <strong>{track?.album ?? 'your queue'}</strong>
         </p>
+        <KaraokeButton className="m-round m-round--plain" size={24} />
         <button type="button" className="m-round m-round--plain" aria-label="Lyrics" onClick={() => setLyricsOpen(true)}>
           <Icon name="lyrics" size={24} />
         </button>
@@ -102,19 +122,7 @@ export default function Player() {
             <StarButton target={{ kind: 'song', item: track }} name={track.title} starred={isStarred(ids, 'song', track.id)} />
           </div>
           <Seek />
-          <TransportControls
-            playing={playing}
-            busy={s.status === 'loading' || s.status === 'buffering'}
-            canPrev={s.queue.items.length > 0}
-            canNext={nextIndex(s.queue, true) !== null}
-            shuffle={s.queue.shuffle}
-            repeat={s.queue.repeat}
-            onToggle={s.togglePlay}
-            onPrev={s.previous}
-            onNext={s.next}
-            onShuffle={() => s.setShuffle(!s.queue.shuffle)}
-            onRepeat={s.cycleRepeat}
-          />
+          {transport}
           {s.error && (
             <p className="m-player__error" role="alert">
               {s.error.message}{' '}
@@ -146,26 +154,48 @@ export default function Player() {
         <div className="m-lyricsfull" role="dialog" aria-modal="true" aria-label="Lyrics">
           <Backdrop />
           <header className="m-lyricsfull__bar">
-            <button type="button" className="m-round m-round--plain" aria-label="Close lyrics" autoFocus onClick={() => setLyricsOpen(false)}>
+            <button type="button" className="m-round" aria-label="Close lyrics" autoFocus onClick={() => setLyricsOpen(false)}>
               <Icon name="down" size={26} />
             </button>
-            <p className="m-lyricsfull__title">
-              <strong>{track.title}</strong>
-              <span>{track.artist}</span>
-            </p>
-            <StarButton target={{ kind: 'song', item: track }} name={track.title} starred={isStarred(ids, 'song', track.id)} />
-          </header>
-          <LyricsView
-            key={track.id}
-            track={{ id: track.id, title: track.title, artist: track.artist, album: track.album, duration: track.duration, isrc: track.isrc, explicit: track.explicit }}
-          />
-          <footer className="m-lyricsfull__foot">
-            <Seek />
-            <button type="button" className="m-play" aria-label={playing ? 'Pause' : 'Play'} aria-busy={s.status === 'loading' || s.status === 'buffering'} onClick={s.togglePlay}>
-              <Icon name={playing ? 'pause' : 'play'} size={26} />
+            <p className="m-lyricsfull__album">{track.album}</p>
+            <button type="button" className="m-round" aria-label={`More actions for ${track.title}`} onClick={() => setMenuOpen(true)}>
+              <Icon name="more" size={22} />
             </button>
+          </header>
+          <div className="m-lyricsfull__track">
+            <span className="m-thumb">
+              <Cover id={track.coverArt} size={128} />
+            </span>
+            <div className="m-text">
+              <p className="m-text__title">{track.title}</p>
+              <p className="m-text__sub">{track.artist}</p>
+            </div>
+            <StarButton target={{ kind: 'song', item: track }} name={track.title} starred={isStarred(ids, 'song', track.id)} />
+          </div>
+          <div className="m-lyricsfull__body">
+            <LyricsView
+              key={track.id}
+              track={{ id: track.id, title: track.title, artist: track.artist, album: track.album, duration: track.duration, isrc: track.isrc, explicit: track.explicit }}
+            />
+            <KaraokeButton className="m-round m-round--glass" size={22} />
+          </div>
+          <footer className="m-lyricsfull__foot">
+            <Seek remaining />
+            {transport}
+            <div className="m-lyricsfull__tabs">
+              <button type="button" className="icon-btn" aria-label="Hide lyrics" aria-pressed onClick={() => setLyricsOpen(false)}>
+                <Icon name="lyrics" size={24} />
+              </button>
+              <button type="button" className="icon-btn" aria-label="Queue" onClick={() => setQueueOpen(true)}>
+                <Icon name="queue" size={24} />
+              </button>
+            </div>
           </footer>
         </div>
+      )}
+
+      {menuOpen && track && (
+        <TrackActions song={track} index={s.queue.index} starred={isStarred(ids, 'song', track.id)} onClose={() => setMenuOpen(false)} />
       )}
 
       {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
