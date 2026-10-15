@@ -1,7 +1,7 @@
 import { buildUrl } from './auth'
 import { request } from './client'
 import { SubsonicError } from './errors'
-import type { Album, Artist, Credentials, OpenSubsonicExtension, Playlist, SearchResults, Song, StructuredLyrics } from './types'
+import type { Album, Artist, ChatMessage, Credentials, NowPlayingEntry, OpenSubsonicExtension, Playlist, SearchResults, Song, StructuredLyrics } from './types'
 
 const auth = ({ username, password }: Credentials) => ({ username, password })
 
@@ -132,6 +132,38 @@ export async function search3(c: Credentials, params: SearchParams, signal?: Abo
   const r = await request<{ searchResult3?: RawSearch }>(c.baseUrl, 'search3', { auth: auth(c), params: { ...params }, signal })
   return mapSearch(r.searchResult3)
 }
+
+// ── Social: who is playing what on this server, and its chat room ───────────
+
+interface RawNowPlaying extends RawSong { username?: unknown; minutesAgo?: unknown; playerName?: unknown; state?: unknown }
+interface RawChatMessage { username?: unknown; time?: unknown; message?: unknown }
+
+/** Everyone's current track on this server, the caller's own included (Subsonic has no per-user privacy here). */
+export async function getNowPlaying(c: Credentials, signal?: AbortSignal): Promise<NowPlayingEntry[]> {
+  const r = await request<{ nowPlaying?: { entry?: RawNowPlaying[] } }>(c.baseUrl, 'getNowPlaying', { auth: auth(c), signal })
+  return list(r.nowPlaying?.entry)
+    .filter((e) => typeof e.username === 'string' && e.username !== '' && e.id !== undefined)
+    .map((e) => ({
+      username: e.username as string,
+      minutesAgo: typeof e.minutesAgo === 'number' && e.minutesAgo >= 0 ? e.minutesAgo : 0,
+      playerName: typeof e.playerName === 'string' && e.playerName ? e.playerName : undefined,
+      paused: e.state === 'paused',
+      song: mapSong(e),
+    }))
+}
+
+/** Chat messages newer than `since` (ms), oldest first. Navidrome doesn't implement chat and answers HTTP 410. */
+export async function getChatMessages(c: Credentials, since?: number, signal?: AbortSignal): Promise<ChatMessage[]> {
+  const r = await request<{ chatMessages?: { chatMessage?: RawChatMessage[] } }>(c.baseUrl, 'getChatMessages', { auth: auth(c), params: { since }, signal })
+  return list(r.chatMessages?.chatMessage)
+    .filter((m): m is ChatMessage => typeof m.username === 'string' && typeof m.time === 'number' && typeof m.message === 'string')
+    .map(({ username, time, message }) => ({ username, time, message }))
+    .sort((a, b) => a.time - b.time)
+}
+
+/** Posts to the server-wide room. Subsonic only has GET here, so the text travels in the query string like every other parameter. */
+export const addChatMessage = (c: Credentials, message: string, signal?: AbortSignal) =>
+  request(c.baseUrl, 'addChatMessage', { auth: auth(c), params: { message }, signal })
 
 // ── Writes: favourites, play reporting, playlist editing ────────────────────
 

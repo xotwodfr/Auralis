@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { Link, Outlet, useParams, useSearchParams } from 'react-router'
 import { getAlbum, getAlbumList2, getArtist, getArtists, getPlaylist, getPlaylists, getStarred2, search3, type AlbumListType } from '../api/subsonic/endpoints'
 import { Boundary, Cover, useAlbumSongs } from '../features/library/components'
 import { useLibraryQuery, usePagedQuery } from '../features/library/queries'
+import { useUnread } from '../features/social/data'
+import { Badge, ChatThread, Profile, SocialTabs } from '../features/social/Social'
 import { formatDuration } from '../lib/format'
 import { useAuth } from '../state/auth'
 import { Icon } from '../ui/Icon'
@@ -15,6 +17,17 @@ const PAGE = 60
 
 function greeting(hour = new Date().getHours()) {
   return hour < 5 ? 'Good night' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+}
+
+/** Top-left on every tab's page: opens Social, with a dot while chat messages are unread. */
+function SocialLink() {
+  const unread = useUnread()
+  return (
+    <Link to="/social" className="m-round m-round--plain m-social" aria-label={unread ? `Social, ${unread} unread` : 'Social'}>
+      <Icon name="people" size={24} />
+      <Badge count={unread} />
+    </Link>
+  )
 }
 
 function SettingsLink() {
@@ -50,6 +63,7 @@ export function Home() {
   return (
     <div className="m-page m-page--home">
       <header className="m-top">
+        <SocialLink />
         <h1 className="m-h1">{greeting()}</h1>
         <SettingsLink />
       </header>
@@ -124,6 +138,7 @@ export function SearchPage() {
   return (
     <div className="m-page">
       <header className="m-top">
+        <SocialLink />
         <h1 className="m-h1">Search</h1>
         <SettingsLink />
       </header>
@@ -207,10 +222,11 @@ export function Library() {
   return (
     <div className="m-page">
       <header className="m-top m-top--sticky">
+        <SocialLink />
+        <h1 className="m-h1">Your Library</h1>
         <Link to="/settings" className="m-avatar" aria-label="Settings">
           {(user ?? '?').slice(0, 1).toUpperCase()}
         </Link>
-        <h1 className="m-h1">Your Library</h1>
       </header>
       <div className="m-chips" role="group" aria-label="Show">
         {VIEWS.map((v) => (
@@ -415,6 +431,44 @@ export function LikedPage() {
           </Shelf>
         )}
       </Boundary>
+    </div>
+  )
+}
+
+/** Social on the phone: the shared sections under this UI's own page header and chips. */
+export function SocialPage() {
+  return (
+    <div className="m-page social">
+      <header className="m-top m-top--sticky">
+        <BackButton />
+        <h1 className="m-h1">Social</h1>
+      </header>
+      <SocialTabs />
+      <Outlet />
+    </div>
+  )
+}
+
+export function SocialThreadPage() {
+  return (
+    <div className="m-page social social--thread">
+      <header className="m-top">
+        <BackButton />
+        <h1 className="m-h1">Server chat</h1>
+      </header>
+      <ChatThread />
+    </div>
+  )
+}
+
+export function SocialProfilePage() {
+  return (
+    <div className="m-page social">
+      <header className="m-top m-top--sticky">
+        <BackButton />
+        <h1 className="m-h1">Social</h1>
+      </header>
+      <Profile />
     </div>
   )
 }

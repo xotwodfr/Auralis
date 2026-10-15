@@ -5,6 +5,7 @@ import { currentEntry, nextIndex } from '../audio/queue'
 import { Cover, StarButton } from '../features/library/components'
 import { TrackActions } from '../features/library/TrackActions'
 import { isStarred, useStarred } from '../features/library/starred'
+import { EffectsButton, EffectsPanel } from '../features/effects/EffectsPanel'
 import LyricsView from '../features/lyrics/LyricsView'
 import QueuePanel from '../features/queue/QueuePanel'
 import { formatDuration } from '../lib/format'
@@ -64,6 +65,8 @@ export default function Player() {
   const tint = useCoverTint(track?.coverArt, 30)
   const [queueOpen, setQueueOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [fxOpen, setFxOpen] = useState(false)
+  const toggleFx = () => setFxOpen((o) => !o)
   const closeButton = useRef<HTMLButtonElement>(null)
   // The mini-player's lyrics button opens straight into the fullscreen lyrics.
   const [lyricsOpen, setLyricsOpen] = useState((useLocation().state as { lyrics?: boolean } | null)?.lyrics === true)
@@ -108,6 +111,7 @@ export default function Player() {
                 <Icon name="down" size={24} />
               </button>
               <span className="m-land__gap" />
+              <EffectsButton className="m-round m-round--plain" open={fxOpen} onClick={toggleFx} />
               <button type="button" className="m-round m-round--plain" aria-label="Queue" onClick={() => setQueueOpen(true)}>
                 <Icon name="queue" size={22} />
               </button>
@@ -136,6 +140,7 @@ export default function Player() {
         </div>
         {menuOpen && <TrackActions song={track} index={s.queue.index} starred={isStarred(ids, 'song', track.id)} onClose={() => setMenuOpen(false)} />}
         {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
+        {fxOpen && <EffectsPanel onClose={() => setFxOpen(false)} />}
       </div>
     )
   }
@@ -151,6 +156,7 @@ export default function Player() {
           <strong>{track?.album ?? 'your queue'}</strong>
         </p>
         <KaraokeButton className="m-round m-round--plain" size={24} />
+        <EffectsButton className="m-round m-round--plain" size={24} open={fxOpen} onClick={toggleFx} />
         <button type="button" className="m-round m-round--plain" aria-label="Lyrics" onClick={() => setLyricsOpen(true)}>
           <Icon name="lyrics" size={24} />
         </button>
@@ -259,6 +265,7 @@ export default function Player() {
       )}
 
       {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
+      {fxOpen && <EffectsPanel onClose={() => setFxOpen(false)} />}
     </div>
   )
 }

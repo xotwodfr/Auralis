@@ -143,7 +143,16 @@ criteria above that it affects are met.
   failure and retry; wrong password; keyboard shortcuts and focus ring; 390px viewport), `a11y.spec.ts` (axe-core,
   WCAG 2 A/AA **including colour contrast**, on four pages plus word-synced Now Playing mid-syllable, in all nine themes), `prefs.spec.ts` (OS colour scheme,
   reduced motion, increased contrast, default translucent glass, 360px player with a very long title),
-  `perf.spec.ts` (see below).
+  `perf.spec.ts` (see below), `effects.spec.ts` (a 440 Hz test tone through the real audio graph, measured with an
+  analyser tapped onto the output: speed 1.5× advances the clock 1.5× with `preservesPitch`; pitch +12 moves the peak to
+  880 Hz with speed unchanged; bypass returns to 440 Hz at 1× without reloading; EQ cuts lower the level; a Hall reverb
+  tail is still sounding 300 ms after pause and the dry signal is not), `social.spec.ts` (the Social entry's position —
+  first and top-left in the sidebar, the narrow-screen strip and every phone tab header, portrait and landscape; real
+  activity from the mock's `getNowPlaying`; sending in the chat; an unread badge after `/__chat?say=…`; profile →
+  mention; a Navidrome-style 410 chat; sharing off by default; axe on Activity and Chat; no horizontal overflow; the
+  composer above the phone dock; the same audio element keeps playing, unpaused and advancing, throughout).
+- The e2e build sets `VITE_AURALIS_BACKEND_URL` to the preview server itself. Without it, production builds default to
+  the hosted lyrics server and 19 specs failed (they never reached the local bridge).
 
 ### Measured performance (headless Chromium 154, software rendering, this development machine)
 Absolute numbers are **not** representative of real hardware; the structural results are the useful part.
@@ -183,9 +192,14 @@ reader pass, and judging how themes *look*. Do those by hand.
   the live API (no credentials were available). Real-catalogue accuracy (how often ordinary tracks match, how often a
   choice is asked) is unmeasured.
 - The syllable sweep was judged against fixture timings on silent audio, not against real vocals.
+- Audio effects are measured on a test tone in Chromium. How they sound on music (phase-vocoder artefacts, reverb
+  character) is a listening judgement: see the manual step in `README.md`. Unit tests use a recording Web Audio fake
+  (`tests/fakeWebAudio.ts`) for wiring and lifecycle, and run the DSP itself on plain arrays.
 - Real Navidrome behaviour (CORS on cover art, `search3` with an empty query, `getLyricsBySongId`) is only checked
   against the mock; use the manual checklist in `README.md`.
 - Albums/Recent/Recently Added grow without bound as "Load more" is pressed (no virtualization for grids).
+- Social is tested against the mock and MSW only: never against a real Airsonic chat or a real Navidrome
+  `getNowPlaying`, and the Android build was not run on a device (none was available).
 
 ## 10. Navigation redesign, favourites and play reporting (M7)
 

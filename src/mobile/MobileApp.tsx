@@ -8,7 +8,9 @@ import { Icon, type IconName } from '../ui/Icon'
 import MiniPlayer from './MiniPlayer'
 import Player from './Player'
 import { Backdrop } from './parts'
-import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage } from './pages'
+import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage, SocialPage, SocialProfilePage, SocialThreadPage } from './pages'
+import { Activity, ConversationList, People } from '../features/social/Social'
+import { CHAT_POLL_BACKGROUND_MS, useChatPolling } from '../features/social/data'
 import SettingsPage from './SettingsPage'
 
 const TABS: { to: string; label: string; icon: IconName; match: (path: string) => boolean }[] = [
@@ -26,6 +28,7 @@ function useLyricSize() {
 }
 
 function Shell() {
+  useChatPolling(CHAT_POLL_BACKGROUND_MS)
   const { pathname } = useLocation()
   // Braces matter: newer Chromium returns a Promise from scrollTo, which React would take for a cleanup.
   useEffect(() => {
@@ -89,6 +92,13 @@ function SignedIn() {
           <Route path="/library/playlists/:id" element={<PlaylistPage />} />
           <Route path="/browse/:type" element={<BrowsePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/social" element={<SocialPage />}>
+            <Route index element={<Activity />} />
+            <Route path="people" element={<People />} />
+            <Route path="chat" element={<ConversationList />} />
+          </Route>
+          <Route path="/social/people/:name" element={<SocialProfilePage />} />
+          <Route path="/social/chat/:room" element={<SocialThreadPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>

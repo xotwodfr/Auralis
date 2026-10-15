@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 interface Props {
   label: string
   value: number
+  min?: number
   max: number
   step?: number
   disabled?: boolean
@@ -14,11 +15,11 @@ interface Props {
 }
 
 /** Native range input: keyboard and screen-reader support come for free. */
-export function Slider({ label, value, max, step = 1, disabled, valueText, live = false, onCommit }: Props) {
+export function Slider({ label, value, min = 0, max, step = 1, disabled, valueText, live = false, onCommit }: Props) {
   // While the pointer is down, show the thumb under the finger and only commit on release.
   const [drag, setDrag] = useState<number | null>(null)
   const shown = drag ?? value
-  const fill = max > 0 ? Math.min(100, Math.max(0, (shown / max) * 100)) : 0
+  const fill = max > min ? Math.min(100, Math.max(0, ((shown - min) / (max - min)) * 100)) : 0
 
   useEffect(() => {
     if (drag === null) return
@@ -40,7 +41,7 @@ export function Slider({ label, value, max, step = 1, disabled, valueText, live 
       className="slider"
       aria-label={label}
       aria-valuetext={valueText}
-      min={0}
+      min={min}
       max={max}
       step={step}
       value={shown}

@@ -54,7 +54,7 @@ Legend: `[ ]` todo · `[x]` done. Keep the diff minimal and prefer existing help
 - [x] `ui/VirtualList` + `ui/Grid` + `ui/Artwork` (lazy image, cover-art id cache, reserved ratio).
 - [x] Empty/loading/error states for each view.
 - [x] Tests: integration — browse mapping + pagination; unit — 10k-row list renders only a DOM window.
-- [ ] Perf: measure synthetic 10k-row scroll ≥55fps in a real browser (not measurable in jsdom).
+- [x] Perf: measure synthetic 10k-row scroll ≥55fps in a real browser (`e2e/perf.spec.ts`: ~60 fps, headless Chromium).
 - **Done when:** all browse views navigate; search returns typed results; scrolling holds 55fps.
 
 ## M3 — Playback engine & queue
@@ -141,7 +141,7 @@ Legend: `[ ]` todo · `[x]` done. Keep the diff minimal and prefer existing help
 - [x] Tests: dialog focus trap/restore, shortcuts, theme, toasts, error boundary, segmented control,
       reduced-motion lyrics scroll, axe-core (critical/serious, colour-contrast rule off) on Connect,
       Artists, Albums, Settings, Now Playing. `axe-core` added as a dev dependency for TESTING.md §7.
-- [ ] e2e (Playwright) — keyboard + reduced-motion/transparency in a real browser. Not written.
+- [x] e2e (Playwright) — keyboard + reduced-motion/transparency in a real browser (`smoke.spec.ts`, `prefs.spec.ts`).
 - **Done when:** both themes match tokens; all media queries honored; every screen has empty/
       loading/error states.
 - **Verification status:** automated tests + typecheck/lint/build pass. **Not verified in a browser:** the
@@ -285,6 +285,38 @@ Legend: `[ ]` todo · `[x]` done. Keep the diff minimal and prefer existing help
 - [ ] `getStarred2` refetch on every heart click is wasteful on a large starred library — move to a targeted update.
 - [ ] 5-star ratings (`setRating`), internet radio, `savePlayQueue` cross-device continuity, offline caching.
 - [ ] Keyboard shortcuts for favourite / queue / Now Playing; a type-ahead jump in long lists.
+
+## Audio effects in Now Playing
+- [x] Speed 0.5–2× (browser time-stretch, pitch kept); pitch ±12 semitones (AudioWorklet phase vocoder, tempo kept, so
+      independent of speed); reverb on/off with Room/Hall/Plate and amount; the existing 10-band EQ and presets; a master
+      bypass that keeps the settings; per-control and global reset. Global and persisted, like the EQ already was.
+- [x] Panel opened from Now Playing: the queue overlay's place and glass on the web, a bottom sheet in the phone UI (beside
+      the controls when sideways). Checkbox on the web, switches on the phone, as each screen already does.
+- [x] Honest unavailable states: no CORS / no Web Audio disables pitch, reverb and EQ (speed still works); no AudioWorklet
+      disables pitch. Never a silent fallback to `playbackRate`.
+- [x] Tests: DSP (frequencies, level, duration, chord, rooms), the engine's graph lifecycle against a recording Web Audio
+      fake, store and panel integration, and `e2e/effects.spec.ts` measuring the real output in Chromium.
+- [ ] Verify in Firefox, Safari, the Tauri webviews (WebKitGTK, WebView2, Android WebView) and on a low-end phone (the
+      pitch shifter costs ~0.4 ms per 2.7 ms audio quantum here).
+- [ ] Native apps (`apple/`): not implemented.
+- [ ] Skipped on purpose: stereo width and bass enhancement (EQ presets cover bass; width would add a control for little).
+
+## Social (friends, listening activity, chat, profiles)
+
+- [x] Backend audit: `getNowPlaying` is real (all users, expires at track end); Subsonic chat exists on some servers but
+      Navidrome answers 410; no Subsonic server has friends, requests, presence or direct messages. No backend added.
+- [x] Social entry top-left: first sidebar destination (and first narrow-screen tab) on the web, the top-left button on
+      every phone tab. Unread badge from real chat state only.
+- [x] Activity (live vs. stale, play / open album), People (search), Profiles (status, recent messages, mention), Chat
+      (conversation list + thread, send waits for the server, unread/read, unavailable/offline/error/session states).
+- [x] Privacy: "Share what I'm playing" (the visible now-playing ping) is its own setting, **off by default**, in Social
+      and both Settings pages; play counts stay under "Report plays".
+- [x] Desktop: the queue and the effects panel no longer stack on top of each other (opening one closes the other).
+- [x] e2e config: the build now targets the preview server's lyrics bridge (19 specs failed against the hosted default).
+- [ ] Not possible on Subsonic: friends and friend requests, direct/group messages, presence, other users' history.
+      These need a social service with its own accounts and authorization; deliberately not invented.
+- [ ] Unverified: a real Airsonic chat, a real Navidrome `getNowPlaying`, and the Android app on a device.
+- [ ] Chat text goes in the query string (no POST in the API; OpenSubsonic `formPost` could be used where advertised).
 
 ## Cross-cutting rules (all milestones)
 

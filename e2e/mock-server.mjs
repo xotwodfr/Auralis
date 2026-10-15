@@ -25,6 +25,16 @@ const SONGS = [
   song('s4', 'Fourth Song', 'al2', 1), song('s5', 'Fifth Song', 'al2', 2), song('s6', 'Stayin Alive', 'al3', 1),
   song('s7', `A very long song title that keeps going ${'Supercalifragilisticexpialidocious'.repeat(2)} and then some more words`, 'al3', 2),
 ]
+// Social: another account is playing a track now, a third one reported a track long ago; the chat room starts with one message.
+const OTHERS_PLAYING = [
+  { username: 'alex', minutesAgo: 0, playerName: 'Feishin', id: 's6' },
+  { username: 'sam', minutesAgo: 95, playerName: 'Substreamer', id: 's4' },
+]
+const chatSeed = () => [{ username: 'alex', time: Date.now() - 5 * 60_000, message: 'Anyone else on a Bee Gees kick?' }]
+let chat = chatSeed()
+let chatGone = false // true = behave like Navidrome (410)
+/** Who announced what with `scrobble submission=false`: the caller shows up in `getNowPlaying` only after that. */
+let announced = null
 const PLAYLISTS = [{ id: 'pl1', name: 'Road trip', songCount: 2, duration: 80, owner: USER, songs: ['s1', 's4'] }]
 const LYRICS = { s1: [[2000, 'Line one'], [6000, 'Line two'], [10000, 'Line three']] }
 const COVERS = { 'c-red': [220, 40, 40], 'c-blue': [40, 80, 220] }
@@ -137,6 +147,27 @@ function wav(seconds = 40, rate = 8000) {
   return Buffer.concat([h, data])
 }
 const WAV = wav()
+/** 40 s of a 440 Hz sine, 16-bit, for the effects test to measure what the audio graph does to a known signal. */
+function toneWav(seconds = 40, rate = 22050, hz = 440) {
+  const data = Buffer.alloc(seconds * rate * 2)
+  for (let i = 0; i < seconds * rate; i++) data.writeInt16LE(Math.round(0.5 * 32767 * Math.sin((2 * Math.PI * hz * i) / rate)), i * 2)
+  const h = Buffer.alloc(44)
+  h.write('RIFF', 0)
+  h.writeUInt32LE(36 + data.length, 4)
+  h.write('WAVEfmt ', 8)
+  h.writeUInt32LE(16, 16)
+  h.writeUInt16LE(1, 20)
+  h.writeUInt16LE(1, 22)
+  h.writeUInt32LE(rate, 24)
+  h.writeUInt32LE(rate * 2, 28)
+  h.writeUInt16LE(2, 32)
+  h.writeUInt16LE(16, 34)
+  h.write('data', 36)
+  h.writeUInt32LE(data.length, 40)
+  return Buffer.concat([h, data])
+}
+const TONE = toneWav()
+const TONE_SONG = 's5'
 const STARRED_AT = '2026-01-01T00:00:00Z'
 
 const ok = (body = {}) => ({ 'subsonic-response': { status: 'ok', version: '1.16.1', type: 'navidrome', serverVersion: '0.55.0', openSubsonic: true, ...body } })
@@ -214,7 +245,24 @@ function json(q, name) {
       const lines = LYRICS[q.get('id')]
       return ok({ lyricsList: { structuredLyrics: lines ? [{ lang: 'en', synced: true, line: lines.map(([start, value]) => ({ start, value })) }] : [] } })
     }
-    case 'scrobble': case 'savePlayQueue': return ok()
+    case 'scrobble':
+      if (q.get('submission') === 'false') announced = q.get('id')
+      return ok()
+    case 'savePlayQueue': return ok()
+    case 'getNowPlaying': {
+      const entries = [...OTHERS_PLAYING, ...(announced ? [{ username: USER, minutesAgo: 0, playerName: 'Auralis', id: announced }] : [])]
+      return ok({ nowPlaying: { entry: entries.map(({ id, ...who }) => ({ ...SONGS.find((s) => s.id === id), ...who, playerId: 1 })) } })
+    }
+    case 'getChatMessages': {
+      const since = Number(q.get('since') ?? 0)
+      return ok({ chatMessages: { chatMessage: chat.filter((m) => m.time > since) } })
+    }
+    case 'addChatMessage': {
+      const message = q.get('message') ?? ''
+      if (!message.trim()) return failed(10, 'Required parameter is missing: message')
+      chat.push({ username: USER, time: Math.max(Date.now(), (chat.at(-1)?.time ?? 0) + 1), message })
+      return ok()
+    }
     default: return failed(0, `unsupported: ${name}`)
   }
 }
@@ -233,6 +281,15 @@ const server = createServer((req, res) => {
     starred = new Set()
     playlists = structuredClone(PLAYLISTS)
     nextPlaylistId = 2
+    chat = chatSeed()
+    chatGone = false
+    announced = null
+    return void res.writeHead(204, cors).end()
+  }
+  if (url.pathname === '/__chat') {
+    // `?gone=1`: no chat (Navidrome); `?say=text&as=user`: someone else posts.
+    if (url.searchParams.has('gone')) chatGone = url.searchParams.get('gone') === '1'
+    if (url.searchParams.has('say')) chat.push({ username: url.searchParams.get('as') ?? 'alex', time: Date.now(), message: url.searchParams.get('say') })
     return void res.writeHead(204, cors).end()
   }
   if (url.pathname === '/__bulk') {
@@ -283,18 +340,20 @@ const server = createServer((req, res) => {
       : res.writeHead(200, { ...cors, 'content-type': 'application/json' }).end(JSON.stringify(failed(40, 'Wrong username or password'))))
   }
 
+  if (chatGone && (name === 'getChatMessages' || name === 'addChatMessage')) return void res.writeHead(410, cors).end('Gone')
   if (name === 'getCoverArt') {
     const color = COVERS[q.get('id')]
     return void (color ? res.writeHead(200, { ...cors, 'content-type': 'image/png', 'cache-control': 'max-age=60' }).end(png(color)) : res.writeHead(404, cors).end())
   }
   if (name === 'stream') {
     if (!SONGS.some((s) => s.id === q.get('id'))) return void res.writeHead(404, cors).end()
+    const body = q.get('id') === TONE_SONG ? TONE : WAV
     const range = /bytes=(\d+)-(\d*)/.exec(req.headers.range ?? '')
     const start = range ? Number(range[1]) : 0
-    const end = range?.[2] ? Number(range[2]) : WAV.length - 1
+    const end = range?.[2] ? Number(range[2]) : body.length - 1
     const head = { ...cors, 'content-type': 'audio/wav', 'accept-ranges': 'bytes', 'content-length': end - start + 1 }
-    if (range) head['content-range'] = `bytes ${start}-${end}/${WAV.length}`
-    return void res.writeHead(range ? 206 : 200, head).end(WAV.subarray(start, end + 1))
+    if (range) head['content-range'] = `bytes ${start}-${end}/${body.length}`
+    return void res.writeHead(range ? 206 : 200, head).end(body.subarray(start, end + 1))
   }
   res.writeHead(200, { ...cors, 'content-type': 'application/json' }).end(JSON.stringify(json(q, name)))
 })

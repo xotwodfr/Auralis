@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { DEFAULT_EFFECTS, normalizeEffects, type Effects } from '../audio/effects'
 import { kvGet, kvSet } from '../lib/storage'
 
 const KEY = 'settings'
@@ -26,6 +27,11 @@ interface SettingsState {
   externalLookups: boolean
   /** Tell your own server what you play, so its play counts and "recently played" lists stay accurate. */
   reportPlays: boolean
+  /**
+   * Send the server a "now playing" update when a track starts. Everyone signed in to the same server can then see it
+   * (Social, Navidrome's own activity panel). Off until the user turns it on.
+   */
+  shareListening: boolean
   /** Ask the Auralis lyrics server for word-synced (Spicy) lyrics and automatic Spotify matching. */
   lyricsServerEnabled: boolean
   /** The user's own lyrics server (validated, no trailing slash). Empty = the built-in default. */
@@ -43,10 +49,13 @@ interface SettingsState {
   eqEnabled: boolean
   /** Equaliser band gains in dB, low to high (`EQ_FREQS` in audio/dsp). */
   eqGains: number[]
+  /** Speed, pitch, reverb and the master bypass. Global, like the equaliser. */
+  effects: Effects
   /** False until stored settings have been read. */
   hydrated: boolean
   setExternalLookups: (on: boolean) => void
   setReportPlays: (on: boolean) => void
+  setShareListening: (on: boolean) => void
   setLyricsServerEnabled: (on: boolean) => void
   setLyricsServerUrl: (url: string) => void
   setStreamQuality: (q: StreamQuality) => void
@@ -57,6 +66,10 @@ interface SettingsState {
   setCrossfadeSeconds: (s: number) => void
   setEqEnabled: (on: boolean) => void
   setEqGains: (gains: number[]) => void
+  /** Merged into the current effects, then validated and clamped. */
+  setEffects: (patch: Partial<Effects>) => void
+  /** Every effect, the equaliser included, back to neutral. */
+  resetEffects: () => void
   restore: () => Promise<void>
 }
 
@@ -64,6 +77,7 @@ const persist = (s: SettingsState) =>
   kvSet(KEY, {
     externalLookups: s.externalLookups,
     reportPlays: s.reportPlays,
+    shareListening: s.shareListening,
     lyricsServerEnabled: s.lyricsServerEnabled,
     lyricsServerUrl: s.lyricsServerUrl,
     streamQuality: s.streamQuality,
@@ -74,11 +88,13 @@ const persist = (s: SettingsState) =>
     crossfadeSeconds: s.crossfadeSeconds,
     eqEnabled: s.eqEnabled,
     eqGains: s.eqGains,
+    effects: s.effects,
   }).catch(() => undefined)
 
 export const useSettings = create<SettingsState>()((set, get) => ({
   externalLookups: true,
   reportPlays: true,
+  shareListening: false,
   lyricsServerEnabled: true,
   lyricsServerUrl: '',
   streamQuality: 'high',
@@ -89,6 +105,7 @@ export const useSettings = create<SettingsState>()((set, get) => ({
   crossfadeSeconds: 0,
   eqEnabled: false,
   eqGains: FLAT_EQ,
+  effects: DEFAULT_EFFECTS,
   hydrated: false,
   setExternalLookups(on) {
     set({ externalLookups: on })
@@ -96,6 +113,10 @@ export const useSettings = create<SettingsState>()((set, get) => ({
   },
   setReportPlays(on) {
     set({ reportPlays: on })
+    void persist(get())
+  },
+  setShareListening(on) {
+    set({ shareListening: on })
     void persist(get())
   },
   setLyricsServerEnabled(on) {
@@ -138,11 +159,20 @@ export const useSettings = create<SettingsState>()((set, get) => ({
     set({ eqGains: gains })
     void persist(get())
   },
+  setEffects(patch) {
+    set({ effects: normalizeEffects({ ...get().effects, ...patch }) })
+    void persist(get())
+  },
+  resetEffects() {
+    set({ effects: DEFAULT_EFFECTS, eqEnabled: false, eqGains: FLAT_EQ })
+    void persist(get())
+  },
   async restore() {
     const saved = await kvGet<Record<string, unknown>>(KEY).catch(() => undefined)
     if (!get().hydrated) {
       if (typeof saved?.externalLookups === 'boolean') set({ externalLookups: saved.externalLookups })
       if (typeof saved?.reportPlays === 'boolean') set({ reportPlays: saved.reportPlays })
+      if (typeof saved?.shareListening === 'boolean') set({ shareListening: saved.shareListening })
       if (typeof saved?.lyricsServerEnabled === 'boolean') set({ lyricsServerEnabled: saved.lyricsServerEnabled })
       if (typeof saved?.lyricsServerUrl === 'string') set({ lyricsServerUrl: saved.lyricsServerUrl })
       if (isQuality(saved?.streamQuality)) set({ streamQuality: saved.streamQuality })
@@ -153,6 +183,7 @@ export const useSettings = create<SettingsState>()((set, get) => ({
       if (typeof saved?.crossfadeSeconds === 'number') set({ crossfadeSeconds: Math.min(MAX_CROSSFADE_S, Math.max(0, saved.crossfadeSeconds)) })
       if (typeof saved?.eqEnabled === 'boolean') set({ eqEnabled: saved.eqEnabled })
       if (isGains(saved?.eqGains)) set({ eqGains: saved.eqGains })
+      if (saved?.effects !== undefined) set({ effects: normalizeEffects(saved.effects) })
     }
     set({ hydrated: true })
   },

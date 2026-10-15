@@ -111,3 +111,22 @@ export interface StructuredLyrics {
   offset?: number
   line: { start?: number; value: string }[]
 }
+
+/** One `getNowPlaying` entry: someone on this server and the track their player last reported. */
+export interface NowPlayingEntry {
+  username: string
+  /** Minutes since that player reported the track. */
+  minutesAgo: number
+  playerName?: string
+  /** Only some servers say so (Navidrome's `state`); absent means "not known to be paused". */
+  paused: boolean
+  song: Song
+}
+
+/** A message in the server-wide chat room (`getChatMessages`). */
+export interface ChatMessage {
+  username: string
+  /** Milliseconds since the epoch. */
+  time: number
+  message: string
+}

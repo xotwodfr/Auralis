@@ -6,6 +6,7 @@ import { AlbumDetail, Albums, ArtistDetail, Artists, Favorites, PlaylistDetail, 
 import NowPlaying from './features/nowplaying/NowPlaying'
 import Search from './features/search/Search'
 import Settings from './features/settings/Settings'
+import { Activity, ChatIndex, ChatLayout, ChatThread, People, Profile, SocialLayout } from './features/social/Social'
 import { useAuth } from './state/auth'
 import { useSettings } from './state/settings'
 import { useSpotifyLinks } from './state/spotifyLinks'
@@ -62,6 +63,15 @@ export default function App() {
         <Route path="/library/search" element={<Search />} />
         <Route path="/now-playing" element={<NowPlaying />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/social" element={<SocialLayout />}>
+          <Route index element={<Activity />} />
+          <Route path="people" element={<People />} />
+          <Route path="people/:name" element={<Profile />} />
+          <Route path="chat" element={<ChatLayout />}>
+            <Route index element={<ChatIndex />} />
+            <Route path=":room" element={<ChatThread />} />
+          </Route>
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to={signedIn ? '/library' : '/connect'} replace />} />
     </Routes>
