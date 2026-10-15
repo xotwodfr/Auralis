@@ -2,6 +2,7 @@
 // changes and re-renders can never interrupt it. A second element exists only while crossfading.
 
 import { AudioGraph, DEFAULT_AMOUNT, type KaraokeState } from './dsp'
+import { needsGraph, NEUTRAL_FX, type AppliedFx } from './effects'
 
 export type PlayStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'buffering' | 'ended' | 'error'
 
@@ -14,8 +15,10 @@ export type EngineEvent =
   | { type: 'ended' }
   | { type: 'error'; kind: EngineErrorKind }
   | { type: 'karaoke'; state: KaraokeState }
-  /** The equaliser could not be set up (this server blocks cross-origin audio, or there is no Web Audio). */
-  | { type: 'eq-unavailable' }
+  /** The effects graph can't run here (this server blocks cross-origin audio, or there is no Web Audio). Speed still works. */
+  | { type: 'effects-unavailable' }
+  /** The pitch shifter's AudioWorklet can't load (insecure context, or an old browser). */
+  | { type: 'pitch-unavailable' }
 
 type Listener = (event: EngineEvent) => void
 
@@ -41,10 +44,11 @@ export class AudioEngine {
   private routed = new WeakSet<HTMLAudioElement>()
   private wantKaraoke = false
   private karaokeAmount = DEFAULT_AMOUNT
-  private eqOn = false
-  private eqGains: readonly number[] = []
+  private fx: AppliedFx = NEUTRAL_FX
   /** Web Audio only gets samples from a cross-origin stream that was fetched with CORS, so that is requested lazily. */
   private cors = false
+  /** The graph failed once for this server or browser; don't reload the stream to try again on every slider move. */
+  private graphFailed = false
 
   constructor(element: HTMLAudioElement = new Audio()) {
     this.primary = this.current = element
@@ -59,6 +63,7 @@ export class AudioEngine {
   /** Events from an element that is not the current one (a track fading out) are ignored. */
   private listen(el: HTMLAudioElement) {
     el.preload = 'auto'
+    setRate(el, this.fx.speed)
     const mine = (fn: () => void) => () => el === this.current && fn()
     const handlers: Record<string, () => void> = {
       loadstart: () => {
@@ -87,13 +92,9 @@ export class AudioEngine {
       error: () => {
         const kind = KIND_BY_MEDIA_ERROR[el.error?.code ?? 0]
         if (!kind || !el.getAttribute('src')) return
-        if (this.cors && !this.graph) {
+        if (this.cors && !this.routedAny()) {
           // The server refused a CORS fetch: play normally and tell the user the effects cannot work here.
-          this.cors = false
-          if (this.wantKaraoke) this.emit({ type: 'karaoke', state: 'unavailable' })
-          if (this.eqOn) this.emit({ type: 'eq-unavailable' })
-          this.wantKaraoke = false
-          this.eqOn = false
+          this.unavailable()
           this.reload()
           return
         }
@@ -177,10 +178,9 @@ export class AudioEngine {
   setKaraoke(on: boolean): void {
     this.wantKaraoke = on
     if (!on) return this.graph ? this.graph.setActive(false) : this.emit({ type: 'karaoke', state: 'off' })
-    if (!AudioGraph.supported) return this.emit({ type: 'karaoke', state: 'unavailable' })
-    if (this.graph) return this.graph.setActive(true)
-    this.emit({ type: 'karaoke', state: 'on' })
+    if (!AudioGraph.supported || this.graphFailed) return this.unavailable()
     this.needGraph()
+    this.graph?.setActive(true)
   }
 
   setKaraokeAmount(amount: number): void {
@@ -188,20 +188,56 @@ export class AudioEngine {
     this.graph?.setAmount(amount)
   }
 
-  /** `gains`: dB per band. Flat when off, so switching off never leaves a stale curve. */
-  setEq(on: boolean, gains: readonly number[]): void {
-    this.eqOn = on
-    this.eqGains = gains
-    if (this.graph) return this.graph.setEq(on ? gains : [])
-    if (!on) return
-    if (!AudioGraph.supported) return this.emit({ type: 'eq-unavailable' })
+  /**
+   * Speed goes to the media elements (their own time-stretch keeps the pitch); the rest to the graph, which is set up on
+   * first need. Called from UI events, so creating the AudioContext here happens inside a user gesture, which WebKit
+   * requires for it to start.
+   */
+  setEffects(fx: AppliedFx): void {
+    this.fx = fx
+    for (const el of [this.primary, this.secondary]) if (el) setRate(el, fx.speed)
+    this.graph?.setEffects(fx)
+    if (!needsGraph(fx)) return
     this.needGraph()
+    this.graph?.resume()
   }
 
+  /** Forget a failure that belonged to the previous server (after switching accounts). */
+  resetEffectsSupport(): void {
+    this.graphFailed = false
+  }
+
+  /** The graph exists and the stream is (being) fetched with CORS so it can feed it. A no-op once true or failed. */
   private needGraph() {
-    if (this.cors) return
+    if (this.cors || this.graphFailed) return
+    if (!AudioGraph.supported || !this.ensureGraph()) return this.unavailable()
     this.cors = true
     this.reload()
+  }
+
+  private ensureGraph(): AudioGraph | null {
+    if (this.graph) return this.graph
+    try {
+      this.graph = new AudioGraph(this.karaokeAmount, (e) => this.emit(e))
+      this.graph.setEffects(this.fx)
+    } catch {
+      // reported by the caller
+    }
+    return this.graph
+  }
+
+  /** No graph here: plain playback continues, and the effects that need it are reported unavailable. */
+  private unavailable() {
+    this.graphFailed = true
+    this.cors = false
+    if (this.wantKaraoke) this.emit({ type: 'karaoke', state: 'unavailable' })
+    this.wantKaraoke = false
+    this.emit({ type: 'effects-unavailable' })
+  }
+
+  /** Once an element feeds the graph it must keep loading with CORS, or it would play silence. */
+  private routedAny() {
+    return [this.primary, this.secondary].some((el) => el && this.routed.has(el))
   }
 
   private reload() {
@@ -210,24 +246,16 @@ export class AudioEngine {
     if (url) this.load(url, { autoplay: !el.paused, position: el.currentTime })
   }
 
-  /** Routes `el` through the effects graph, creating it on first use. */
+  /** Routes `el` through the effects graph. */
   private route(el: HTMLAudioElement) {
+    if (this.routed.has(el)) return
     try {
-      if (!this.graph) {
-        this.graph = new AudioGraph(this.karaokeAmount, (state) => this.emit({ type: 'karaoke', state }))
-        this.graph.setEq(this.eqOn ? this.eqGains : [])
-        this.graph.setActive(this.wantKaraoke)
-      }
-      if (!this.routed.has(el)) {
-        this.graph.attach(el)
-        this.routed.add(el)
-      }
+      const graph = this.ensureGraph()
+      if (!graph) throw new Error('no graph')
+      graph.attach(el)
+      this.routed.add(el)
     } catch {
-      this.cors = false
-      if (this.wantKaraoke) this.emit({ type: 'karaoke', state: 'unavailable' })
-      if (this.eqOn) this.emit({ type: 'eq-unavailable' })
-      this.wantKaraoke = false
-      this.eqOn = false
+      this.unavailable()
     }
   }
 
@@ -283,4 +311,11 @@ export class AudioEngine {
   private emit(event: EngineEvent) {
     for (const l of this.listeners) l(event)
   }
+}
+
+/** `defaultPlaybackRate` survives source changes (loading resets `playbackRate` to it). */
+function setRate(el: HTMLMediaElement, rate: number) {
+  el.preservesPitch = true
+  el.defaultPlaybackRate = rate
+  el.playbackRate = rate
 }

@@ -35,6 +35,9 @@ const PATHS = {
   back: <path d="M14.5 5.5L8 12l6.5 6.5" />,
   'playlist-add': <path d="M4 7h11M4 12h11M4 17h7M18 13.5v6M15 16.5h6" />,
   wave: <path d="M4 10v4M8 6.5v11M12 4v16M16 7.5v9M20 10.5v3" />,
+  effects: <path d="M6 4v6M6 14v6M12 4v2M12 10v10M18 4v10M18 18v2M4 12h4M10 8h4M16 16h4" />,
+  people: <path d="M9 11.2a3.3 3.3 0 100-6.6 3.3 3.3 0 000 6.6M3 19.5a6 6 0 0112 0M15.5 4.9a3.3 3.3 0 010 6.1M17.6 14a6 6 0 013.4 5.5" />,
+  send: <path d="M4.5 11.5L20 4l-5.5 16-3-6.5zM11.5 13.5L20 4" />,
   more: (
     <>
       <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none" />

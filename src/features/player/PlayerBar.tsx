@@ -9,6 +9,7 @@ import { Slider } from '../../ui/Slider'
 import { TransportControls } from '../../ui/TransportControls'
 import { Cover } from '../library/components'
 import QueuePanel from '../queue/QueuePanel'
+import { useExclusiveOverlay } from '../../ui/overlay'
 
 /** Re-renders on every playhead tick, so it is kept separate from the rest of the bar. */
 function Progress() {
@@ -52,6 +53,7 @@ export default function PlayerBar() {
     })),
   )
   const [queueOpen, setQueueOpen] = useState(false)
+  useExclusiveOverlay('queue', queueOpen, () => setQueueOpen(false))
   const queueButton = useRef<HTMLButtonElement>(null)
 
   const entry = currentEntry(s.queue)

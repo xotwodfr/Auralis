@@ -11,6 +11,13 @@ Apple-inspired Liquid Glass interface and word-by-word synced lyrics.
   and play reporting back to your server.
 - **Your server stays the source of truth** — favourites and playlists are stored on the server and show up in your
   other Subsonic clients.
+- **Audio effects** — on Now Playing: playback speed (pitch kept), pitch (tempo kept), reverb and a 10-band equalizer,
+  with a bypass that keeps your settings. Pitch, reverb and the equalizer need CORS on the server's audio (like karaoke);
+  pitch also needs HTTPS or localhost. Speed works everywhere.
+- **Social** — top-left in the app: who on your server is playing what (with one-tap play), the server's chat room where
+  the server has one, and people/profiles built only from that data. Sharing your own listening is **off** until you
+  turn it on. Navidrome has no chat and no Subsonic server has friends or direct messages, so Auralis says so instead
+  of faking them.
 - **Lyrics** — server lyrics first, [LRCLIB](https://lrclib.net) as fallback, and optional syllable-level lyrics from
   Spicy Lyrics (the active syllable lifts and glows as it is sung).
 
@@ -148,6 +155,10 @@ Automated tests never touch a real server. Before relying on a build, walk throu
 8. Play a track past halfway, then check Navidrome's play count / *recently played* for it, and that the **Recent** page starts filling up. Turn off Settings → Playback → *Report plays to your server* and confirm nothing more is recorded.
 9. In Settings: switch themes (including *Album Artwork*), try *Disconnect*, and confirm stored credentials are gone (DevTools → Application → IndexedDB → `auralis`).
 10. Stop the server (or block it) while playing and while browsing: you should see a clear message with a retry, not a blank page.
+11. Audio effects (listen; the automated test only measures a test tone): on Now Playing open *Audio effects*. Speed 1.5×
+    should sound faster at the same pitch; pitch +5 should sound higher at the same tempo; Hall reverb at 50 % should
+    add a tail you hear after pausing; *Effects* off must sound exactly like the original without the track restarting,
+    and on again must bring every setting back. If your server lacks CORS, the panel must say so and only speed works.
 
 ## Security notes
 

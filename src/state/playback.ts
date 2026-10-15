@@ -3,7 +3,8 @@ import { coverArtUrl, ping, scrobble, streamUrl } from '../api/subsonic/endpoint
 import { SubsonicError } from '../api/subsonic/errors'
 import type { Song } from '../api/subsonic/types'
 import { toast } from './toast'
-import { DEFAULT_AMOUNT, type KaraokeState } from '../audio/dsp'
+import { AudioGraph, DEFAULT_AMOUNT, type KaraokeState } from '../audio/dsp'
+import { needsGraph, resolveFx } from '../audio/effects'
 import { AudioEngine, type EngineErrorKind, type PlayStatus } from '../audio/engine'
 import { setMediaHandlers, setMediaInfo } from '../audio/mediaSession'
 import { currentEntry, initialQueue, nextIndex, previousIndex, queueReducer, type QueueAction, type QueueState, type Repeat } from '../audio/queue'
@@ -49,6 +50,10 @@ interface PlaybackState {
   karaoke: KaraokeState
   /** How much of the centre (vocals) is taken out, 0-1. Remembered between sessions. */
   karaokeAmount: number
+  /** Pitch, reverb and the equaliser can't process this server's stream (no CORS) or this browser has no Web Audio. */
+  effectsUnavailable: boolean
+  /** Pitch shifting also needs AudioWorklet, which browsers only offer on HTTPS or localhost. */
+  pitchUnavailable: boolean
 
   playTracks: (tracks: Song[], start?: number) => void
   shufflePlay: (tracks: Song[]) => void
@@ -141,6 +146,8 @@ export const usePlayback = create<PlaybackState>()((set, get) => {
     error: null,
     karaoke: 'off',
     karaokeAmount: initialAmount,
+    effectsUnavailable: !AudioGraph.supported,
+    pitchUnavailable: !AudioGraph.pitchSupported,
 
     playTracks(tracks, start = 0) {
       if (!tracks.length) return
@@ -237,9 +244,10 @@ export const usePlayback = create<PlaybackState>()((set, get) => {
     reset() {
       clearTimeout(saveTimer)
       engine.stop()
+      engine.resetEffectsSupport() // the next server may allow cross-origin audio
       loaded = false
       announced = submitted = undefined
-      set({ queue: initialQueue(), status: 'idle', autoplay: false, position: 0, duration: 0, error: null })
+      set({ queue: initialQueue(), status: 'idle', autoplay: false, position: 0, duration: 0, error: null, effectsUnavailable: !AudioGraph.supported })
       void kvDelete(KEY).catch(() => undefined)
     },
   }
@@ -295,10 +303,12 @@ function save() {
 /**
  * Tell the server what is playing. Fire-and-forget on purpose: play reporting must never delay or break
  * playback, and a server that doesn't implement `scrobble` simply answers an error we ignore.
+ * The "now playing" ping is visible to everyone on the server, so it has its own opt-in; the play count doesn't.
  */
 function report(id: string, submission: boolean) {
   const c = credentials()
-  if (!c || !useSettings.getState().reportPlays) return
+  const s = useSettings.getState()
+  if (!c || !(submission ? s.reportPlays : s.shareListening)) return
   void scrobble(c, id, submission).catch(() => undefined)
 }
 
@@ -334,13 +344,16 @@ async function diagnose(kind: EngineErrorKind) {
   }
 }
 
+const appliedFx = (s = useSettings.getState()) => resolveFx(s.effects, s.eqEnabled, s.eqGains)
+
 /** Near the end of a track, with crossfade on, move to the next entry now; the engine overlaps the two streams. */
 function startCrossfade(position: number, duration: number) {
   const seconds = useSettings.getState().crossfadeSeconds
   const s = usePlayback.getState()
   if (!seconds || duration <= 0 || !s.autoplay || s.status !== 'playing') return
   const fade = Math.min(seconds, duration / 2)
-  if (duration - position > fade) return
+  // The fade runs in wall-clock seconds; at 2× speed it covers twice as much of the track.
+  if (duration - position > fade * appliedFx().speed) return
   const entry = currentEntry(s.queue)
   if (!entry || fadedFor === entry.key) return
   const idx = nextIndex(s.queue, false)
@@ -379,9 +392,14 @@ engine.subscribe((e) => {
       }
       set({ karaoke: e.state })
       break
-    case 'eq-unavailable':
-      useSettings.getState().setEqEnabled(false)
-      toast.error('The equaliser needs a server that allows cross-origin audio (CORS).')
+    case 'effects-unavailable':
+      // Settings are kept (the panel shows why they don't apply); only say so when an effect was actually asked for.
+      if (!get().effectsUnavailable && needsGraph(appliedFx())) toast.error('Pitch, reverb and the equaliser need a server that allows cross-origin audio (CORS).')
+      set({ effectsUnavailable: true })
+      break
+    case 'pitch-unavailable':
+      if (!get().pitchUnavailable) toast.error('Pitch shifting isn’t supported in this browser.')
+      set({ pitchUnavailable: true })
       break
     case 'error':
       set({ autoplay: false })
@@ -390,9 +408,9 @@ engine.subscribe((e) => {
   }
 })
 
-// The equaliser lives in settings; the engine follows it.
+// Effects live in settings; the engine follows them.
 useSettings.subscribe((s, prev) => {
-  if (s.eqEnabled !== prev.eqEnabled || s.eqGains !== prev.eqGains) engine.setEq(s.eqEnabled, s.eqGains)
+  if (s.effects !== prev.effects || s.eqEnabled !== prev.eqEnabled || s.eqGains !== prev.eqGains) engine.setEffects(appliedFx(s))
 })
 
 // Persist queue/volume edits (debounced), publish OS media info, and drop everything on disconnect.

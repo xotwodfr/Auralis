@@ -28,6 +28,8 @@ export default defineConfig({
         // Fake Spotify credentials against a local stand-in for automatic matching (never api.spotify.com).
         SPOTIFY_CLIENT_ID: 'e2e-spotify-client', SPOTIFY_CLIENT_SECRET: 'e2e-spotify-secret',
         SPOTIFY_API_BASE: `http://127.0.0.1:${MOCK_PORT}/spotify-upstream`, SPOTIFY_TOKEN_URL: `http://127.0.0.1:${MOCK_PORT}/spotify-upstream/token`,
+        // Production builds default to the hosted lyrics server; point this one at the preview server's own bridge.
+        VITE_AURALIS_BACKEND_URL: `http://127.0.0.1:${APP_PORT}`,
       },
       reuseExistingServer: false,
     },

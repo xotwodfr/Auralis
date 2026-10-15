@@ -67,6 +67,7 @@
 }
 
 [data-platform='mobile'] .karaoke[aria-pressed='true'],
+[data-platform='mobile'] .fx-btn[data-active],
 [data-platform='mobile'] .star[aria-pressed='true'] {
   color: var(--accent);
 }
@@ -1304,6 +1305,38 @@
   max-height: calc(100dvh - var(--m-top-pad) - 90px) !important; /* the list sets its own inline max-height */
 }
 
+/* Audio effects: a bottom sheet over the player, so the cover and transport stay in view above it. */
+[data-platform='mobile'] .fx {
+  inset: auto 0 0;
+  z-index: 9;
+  width: auto;
+  max-height: 70dvh;
+  padding: 16px 8px calc(max(env(safe-area-inset-bottom, 0px), 8px) + 8px);
+  background: #282828;
+  border: 0;
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
+  backdrop-filter: none;
+}
+
+/* Sideways, the panel takes the lyrics half and leaves the cover and transport usable. */
+[data-platform='mobile'] .m-player--land .fx {
+  inset: 0 0 0 auto;
+  width: min(440px, 55vw);
+  max-height: none;
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  border-radius: 0;
+}
+
+[data-platform='mobile'] .toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+[data-platform='mobile'] .fx__reset:not(:disabled) {
+  color: var(--accent);
+}
+
 /* Dialogs (track menu, confirmations) become bottom sheets. */
 [data-platform='mobile'] .scrim {
   place-items: end stretch;
@@ -1555,7 +1588,7 @@
   margin: 0;
 }
 
-[data-platform='mobile'] .m-set .segmented {
+[data-platform='mobile'] :is(.m-set, .fx) .segmented {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
@@ -1565,7 +1598,7 @@
   border-radius: 12px;
 }
 
-[data-platform='mobile'] .m-set .segmented__item {
+[data-platform='mobile'] :is(.m-set, .fx) .segmented__item {
   display: grid;
   gap: 0;
   padding: 8px 4px;
@@ -1576,7 +1609,7 @@
   border-radius: 9px;
 }
 
-[data-platform='mobile'] .m-set .segmented__item[aria-checked='true'] {
+[data-platform='mobile'] :is(.m-set, .fx) .segmented__item[aria-checked='true'] {
   background: rgba(255, 255, 255, 0.2);
 }
 
@@ -1632,60 +1665,15 @@
   }
 }
 
-/* Equalizer */
-.m-eq {
-  gap: 12px;
-  padding-top: 4px;
+/* Equalizer bands: white on the dark phone UI (layout in global.css). */
+[data-platform='mobile'] .eq__slider {
+  height: 140px;
+  accent-color: #fff;
 }
 
-.m-eq__presets {
-  display: flex;
-  gap: 8px;
-  padding-bottom: 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.m-eq__presets .m-chip {
-  flex: none;
-}
-
-.m-eq__presets .m-chip[aria-pressed='true'] {
+[data-platform='mobile'] .eq__presets .m-chip[aria-pressed='true'] {
   color: #000;
   background: #fff;
-}
-
-.m-eq__bands {
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 2px;
-}
-
-.m-eq__band {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  color: var(--text-2);
-  font-size: 0.625rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.m-eq__db {
-  min-height: 1em;
-}
-
-.m-eq__slider {
-  width: 28px;
-  height: 140px;
-  margin: 0;
-  writing-mode: vertical-lr;
-  direction: rtl;
-  accent-color: #fff;
-  background: none;
-}
-
-.m-eq__reset {
-  justify-self: start;
 }
 
 .m-set__block > .slider {
@@ -1694,4 +1682,182 @@
 
 .m-land__info .m-text {
   flex: none;
+}
+
+/* Social (shared sections from features/social, in the phone's look) */
+.m-social {
+  position: relative;
+}
+
+.m-social .badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 10px;
+  height: 10px;
+  padding: 0;
+  font-size: 0; /* a dot: the count is in the link's label */
+  background: var(--accent);
+  border: 2px solid var(--bg);
+}
+
+[data-platform='mobile'] .badge {
+  color: #000;
+  background: var(--accent);
+}
+
+[data-platform='mobile'] .m-chip[aria-current='page'] {
+  color: #000;
+  background: var(--accent);
+}
+
+[data-platform='mobile'] .social__tabs .m-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+[data-platform='mobile'] .social__tabs .m-chip[aria-current='page'] .badge {
+  color: var(--accent);
+  background: #000;
+}
+
+[data-platform='mobile'] .social__section {
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+[data-platform='mobile'] .social__privacy {
+  padding: 4px 16px 12px;
+  background: var(--surface);
+  border: 0;
+  border-radius: 8px;
+}
+
+[data-platform='mobile'] .social__toggle {
+  min-height: 52px;
+}
+
+[data-platform='mobile'] .social__toggle-label {
+  flex: 1;
+}
+
+[data-platform='mobile'] .social__heading {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+[data-platform='mobile'] .social__note {
+  color: var(--text-2);
+}
+
+[data-platform='mobile'] .list-panel {
+  background: var(--surface);
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+[data-platform='mobile'] .social__list .row {
+  min-height: 64px;
+  padding: 8px 12px;
+}
+
+[data-platform='mobile'] .social__search {
+  max-width: none;
+  min-height: 48px;
+  color: var(--text);
+  background: #2a2a2a;
+  border: 0;
+  border-radius: 8px;
+}
+
+[data-platform='mobile'] .avatar {
+  color: var(--text);
+  background: #3e3e3e;
+}
+
+[data-platform='mobile'] .activity {
+  gap: 12px;
+  padding: 12px;
+}
+
+[data-platform='mobile'] .activity__play {
+  width: 44px;
+  height: 44px;
+}
+
+[data-platform='mobile'] .social__chat {
+  display: block;
+}
+
+/* The open conversation fills the space between the header and the dock; only its message log scrolls, so the composer
+   stays put (also when the keyboard resizes the viewport). */
+.social--thread {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--m-tabs-h) - var(--m-mini-h) - 16px);
+}
+
+.m-main:has(.social--thread) {
+  padding-bottom: 0;
+}
+
+[data-platform='mobile'] .social--thread .thread {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  margin: 0 -16px;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+[data-platform='mobile'] .thread__log {
+  padding: 16px;
+}
+
+[data-platform='mobile'] .msg__body {
+  background: #2a2a2a;
+  border-radius: 12px;
+}
+
+[data-platform='mobile'] .msg--mine .msg__body {
+  color: #000;
+  background: var(--accent);
+}
+
+[data-platform='mobile'] .composer {
+  padding: 8px 12px;
+}
+
+[data-platform='mobile'] .composer__field {
+  min-height: 48px;
+  background: #2a2a2a;
+  border: 0;
+  border-radius: 24px;
+}
+
+[data-platform='mobile'] .composer__send {
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+}
+
+[data-platform='mobile'] .composer__error {
+  color: #f15e6c;
+}
+
+[data-platform='mobile'] .profile__name {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+[data-platform='mobile'] .profile__action {
+  color: #000;
+  font-weight: 700;
+  background: var(--accent);
 }

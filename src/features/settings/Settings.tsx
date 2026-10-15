@@ -156,6 +156,8 @@ export default function Settings() {
   const setExternal = useSettings((s) => s.setExternalLookups)
   const reportPlays = useSettings((s) => s.reportPlays)
   const setReportPlays = useSettings((s) => s.setReportPlays)
+  const shareListening = useSettings((s) => s.shareListening)
+  const setShareListening = useSettings((s) => s.setShareListening)
   const theme = useTheme((s) => s.pref)
   const setTheme = useTheme((s) => s.setPref)
   const palette = usePalette((s) => s.palette)
@@ -245,8 +247,16 @@ export default function Settings() {
           <span>Report plays to your server</span>
         </label>
         <p className="hint">
-          Tell your own server which track is playing and record it once you have heard half of it. This is what keeps its play
-          counts, “recently played” lists and smart playlists accurate. Nothing is sent anywhere else.
+          Record each track on your own server once you have heard half of it. This is what keeps its play counts, “recently
+          played” lists and smart playlists accurate. Nothing is sent anywhere else.
+        </p>
+        <label className="check">
+          <input type="checkbox" checked={shareListening} onChange={(e) => setShareListening(e.target.checked)} />
+          <span>Share what I’m playing</span>
+        </label>
+        <p className="hint">
+          Tell your server which track you start. Everyone signed in to the same server can then see it, in Social and in other
+          apps. Off unless you turn it on.
         </p>
       </section>
 

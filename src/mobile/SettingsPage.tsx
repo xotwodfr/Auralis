@@ -2,13 +2,16 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { LyricsServerForm, spicyText, useAccountActions } from '../features/settings/Settings'
 import { useLyricsBackend } from '../features/lyrics/useLyricsBackend'
 import { useAuth } from '../state/auth'
-import { EQ_PRESETS, FLAT_EQ, MAX_CROSSFADE_S, useSettings, type LyricSize, type StreamQuality } from '../state/settings'
-import { EQ_FREQS, EQ_RANGE_DB } from '../audio/dsp'
+import { MAX_CROSSFADE_S, useSettings, type LyricSize, type StreamQuality } from '../state/settings'
+import { EFFECTS_UNAVAILABLE } from '../features/effects/EffectsPanel'
+import { EqualizerBands } from '../features/effects/Equalizer'
+import { usePlayback } from '../state/playback'
 import { useSpotifyLinks } from '../state/spotifyLinks'
 import { toast } from '../state/toast'
 import { Icon, type IconName } from '../ui/Icon'
 import { SegmentedControl } from '../ui/SegmentedControl'
 import { Slider } from '../ui/Slider'
+import { Switch } from '../ui/Switch'
 import { BackButton } from './parts'
 
 const QUALITIES: { value: StreamQuality; label: string; caption: string }[] = [
@@ -56,58 +59,19 @@ function Row({ icon, label, hint, children, onClick, danger = false }: { icon?: 
   )
 }
 
-function Switch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (on: boolean) => void }) {
-  return (
-    <button type="button" role="switch" aria-checked={checked} aria-label={label} className="m-switch" onClick={() => onChange(!checked)}>
-      <span />
-    </button>
-  )
-}
-
-const bandLabel = (hz: number) => (hz >= 1000 ? `${hz / 1000}k` : `${hz}`)
-const sameGains = (a: number[], b: number[]) => a.every((g, i) => g === b[i])
-
-/** Ten-band equaliser: a switch, presets, and one vertical slider per band. */
+/** Ten-band equaliser: a switch, then presets and one vertical slider per band (the same controls as Now Playing's). */
 function Equalizer() {
   const on = useSettings((s) => s.eqEnabled)
-  const gains = useSettings((s) => s.eqGains)
   const setOn = useSettings((s) => s.setEqEnabled)
-  const setGains = useSettings((s) => s.setEqGains)
+  const unavailable = usePlayback((s) => s.effectsUnavailable)
   return (
     <>
-      <Row icon="wave" label="Equalizer" hint="Shape the sound. Applies to everything you play.">
-        <Switch label="Equalizer" checked={on} onChange={setOn} />
+      <Row icon="wave" label="Equalizer" hint={unavailable ? EFFECTS_UNAVAILABLE : 'Shape the sound. Applies to everything you play.'}>
+        <Switch label="Equalizer" checked={on} disabled={unavailable} onChange={setOn} />
       </Row>
-      {on && (
-        <div className="m-set__block m-eq">
-          <div className="m-eq__presets" role="group" aria-label="Equalizer presets">
-            {EQ_PRESETS.map((p) => (
-              <button key={p.name} type="button" className="m-chip" aria-pressed={sameGains(gains, p.gains)} onClick={() => setGains([...p.gains])}>
-                {p.name}
-              </button>
-            ))}
-          </div>
-          <div className="m-eq__bands">
-            {EQ_FREQS.map((hz, i) => (
-              <label key={hz} className="m-eq__band">
-                <span className="m-eq__db">{gains[i]! > 0 ? '+' : ''}{gains[i]}</span>
-                <input
-                  type="range"
-                  className="m-eq__slider"
-                  aria-label={`${bandLabel(hz)} Hz`}
-                  min={-EQ_RANGE_DB}
-                  max={EQ_RANGE_DB}
-                  step={0.5}
-                  value={gains[i]}
-                  onChange={(e) => setGains(gains.map((g, j) => (j === i ? Number(e.target.value) : g)))}
-                />
-                <span>{bandLabel(hz)}</span>
-              </label>
-            ))}
-          </div>
-          <button type="button" className="m-chip m-eq__reset" disabled={sameGains(gains, FLAT_EQ)} onClick={() => setGains([...FLAT_EQ])}>
-            Reset to flat
-          </button>
+      {on && !unavailable && (
+        <div className="m-set__block eq">
+          <EqualizerBands chip="m-chip" />
         </div>
       )}
     </>
@@ -217,6 +181,9 @@ export default function SettingsPage() {
         </Row>
         <Row label="Report plays to your server" hint="Keeps its play counts and recently played lists right">
           <Switch label="Report plays to your server" checked={settings.reportPlays} onChange={settings.setReportPlays} />
+        </Row>
+        <Row label="Share what I'm playing" hint="Everyone on your server can see it in Social">
+          <Switch label="Share what I'm playing" checked={settings.shareListening} onChange={settings.setShareListening} />
         </Row>
         <div className="m-set__block m-set__form">
           <LyricsServerForm />

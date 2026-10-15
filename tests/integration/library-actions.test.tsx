@@ -153,7 +153,8 @@ describe('track actions', () => {
 })
 
 describe('play reporting', () => {
-  it('announces the track, then submits it once past half, and never twice', async () => {
+  it('announces the track (when sharing is on), then submits it once past half, and never twice', async () => {
+    useSettings.setState({ shareListening: true })
     renderAt('/library/albums/al0')
     const tracks = await screen.findByRole('list', { name: 'Tracks' })
     fireEvent.click(within(tracks).getByRole('button', { name: 'Play First Song' }))
@@ -171,6 +172,21 @@ describe('play reporting', () => {
     audio.tick(SONGS[0]!.duration - 0.5)
     await new Promise((r) => setTimeout(r, 20))
     expect(sent('scrobble')).toHaveLength(2)
+    useSettings.setState({ shareListening: false })
+    usePlayback.getState().reset()
+  })
+
+  it('keeps "now playing" private by default: only the play count is reported', async () => {
+    expect(useSettings.getState().shareListening).toBe(false)
+    renderAt('/library/albums/al0')
+    const tracks = await screen.findByRole('list', { name: 'Tracks' })
+    fireEvent.click(within(tracks).getByRole('button', { name: 'Play First Song' }))
+
+    audio.setDuration(SONGS[0]!.duration)
+    audio.tick(1)
+    audio.tick(SONGS[0]!.duration / 2)
+    await waitFor(() => expect(sent('scrobble')).toHaveLength(1))
+    expect(sent('scrobble')[0]!.params).toEqual({ id: ['s1'], submission: ['true'] })
     usePlayback.getState().reset()
   })
 

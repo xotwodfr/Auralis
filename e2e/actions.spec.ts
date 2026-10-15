@@ -65,27 +65,37 @@ test('the track menu is keyboard operable and returns focus', async ({ page }) =
   await expect(more).toBeFocused()
 })
 
-test('playing a track reports it to the server, and the preference stops it', async ({ page, request }) => {
+test('"now playing" stays private until shared; the play-count preference stops reports', async ({ page, request }) => {
+  const scrobbles = async () => (await (await request.get(`${MOCK}/__stats`)).json()).scrobble ?? 0
+  const bar = page.getByRole('region', { name: 'Player' })
   await connect(page)
   await page.goto('/library/albums/al1')
   await page.getByRole('button', { name: 'Play Line Dancer', exact: true }).click()
-  await expect(page.getByRole('region', { name: 'Player' }).getByRole('button', { name: 'Pause' })).toBeVisible()
-  await expect
-    .poll(async () => (await (await request.get(`${MOCK}/__stats`)).json()).scrobble ?? 0, { timeout: 10_000 })
-    .toBeGreaterThan(0)
+  await expect(bar.getByRole('button', { name: 'Pause' })).toBeVisible()
+  await page.waitForTimeout(1500)
+  expect(await scrobbles()).toBe(0) // no "now playing" ping by default; the play itself is recorded at half the track
+  await bar.getByRole('button', { name: 'Pause' }).click()
+
+  await page.getByRole('link', { name: 'Settings', exact: true }).click()
+  await page.getByLabel('Share what I’m playing').check()
+  await page.getByRole('link', { name: 'Albums', exact: true }).click()
+  await page.getByRole('link', { name: /First Album/ }).click()
+  await page.getByRole('button', { name: 'Play Quiet Hours', exact: true }).click()
+  await expect.poll(scrobbles, { timeout: 10_000 }).toBeGreaterThan(0)
 
   // Stop first: the running track would otherwise submit its own play while the baseline is read.
-  await page.getByRole('region', { name: 'Player' }).getByRole('button', { name: 'Pause' }).click()
+  await bar.getByRole('button', { name: 'Pause' }).click()
   await page.getByRole('link', { name: 'Settings', exact: true }).click()
   const toggle = page.getByLabel('Report plays to your server')
   await expect(toggle).toBeChecked()
   await toggle.uncheck()
+  await page.getByLabel('Share what I’m playing').uncheck()
   await page.waitForTimeout(500)
-  const before = (await (await request.get(`${MOCK}/__stats`)).json()).scrobble
+  const before = await scrobbles()
   await page.goto('/library/albums/al1')
   await page.getByRole('button', { name: 'Play Third Song', exact: true }).click()
   await page.waitForTimeout(1500)
-  expect((await (await request.get(`${MOCK}/__stats`)).json()).scrobble).toBe(before)
+  expect(await scrobbles()).toBe(before)
 })
 
 test('the collapsed sidebar persists and keeps every destination reachable', async ({ page }) => {

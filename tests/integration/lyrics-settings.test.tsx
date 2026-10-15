@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router'
 import { clearLyricsCache, readCached, resetLyricsCacheMemory, writeCached } from '../../src/api/lyrics/cache'
 import App from '../../src/App'
 import { kvGet } from '../../src/lib/storage'
+import { DEFAULT_EFFECTS } from '../../src/audio/effects'
 import { useAuth } from '../../src/state/auth'
 import { useSettings } from '../../src/state/settings'
 import { BASE, PASSWORD, USER } from '../server'
@@ -90,7 +91,7 @@ describe('lyrics settings', () => {
     expect(box).toBeChecked()
     fireEvent.click(box)
     expect(useSettings.getState().externalLookups).toBe(false)
-    await waitFor(async () => expect(await kvGet('settings')).toEqual({ externalLookups: false, reportPlays: true, lyricsServerEnabled: true, lyricsServerUrl: '', streamQuality: 'high', adaptiveColors: true, lyricsWordSync: true, lyricSize: 'medium', showLyricSource: true, crossfadeSeconds: 0, eqEnabled: false, eqGains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }))
+    await waitFor(async () => expect(await kvGet('settings')).toEqual({ externalLookups: false, reportPlays: true, shareListening: false, lyricsServerEnabled: true, lyricsServerUrl: '', streamQuality: 'high', adaptiveColors: true, lyricsWordSync: true, lyricSize: 'medium', showLyricSource: true, crossfadeSeconds: 0, eqEnabled: false, eqGains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], effects: DEFAULT_EFFECTS }))
   })
 
   it('clears cached lyrics', async () => {
