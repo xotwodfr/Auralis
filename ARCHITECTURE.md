@@ -43,28 +43,37 @@ app/        routing, providers, error boundaries, theme        (top)
   not stored twice.
 - **`ui`** is dumb and reusable. Screens compose `ui` + hooks into `state`/`api`.
 
-## 3. Directory layout (target)
+## 3. Directory layout
 
 ```
 Auralis/
-  index.html  package.json  tsconfig.json  vite.config.ts
-  src/
-    main.tsx  App.tsx
-    app/        routes.tsx  providers.tsx  theme.ts  ErrorBoundary.tsx
-    api/
-      subsonic/ client.ts  auth.ts  endpoints.ts  types.ts  errors.ts
-      lyrics/   types.ts  registry.ts  providers/{server.ts,lrclib.ts,spicy.ts}
-                match.ts  lrc.ts  cache.ts  spotifyMatch.ts (scoring)  resolve.ts (Spotify id service)
-    audio/      engine.ts  queue.ts  mediaSession.ts
-    state/      auth.ts  playback.ts  settings.ts
-    features/   library/  search/  player/  nowplaying/  lyrics/  settings/  connect/
-    ui/         Glass*.tsx  Button.tsx  List.tsx  Slider.tsx  ...
-    lib/        format.ts  http.ts  storage.ts  kvCache.ts (bounded, expiring IndexedDB blob)
-    styles/     tokens.css  global.css
-  server/       spicy.mjs (key-holding lyrics bridge)  spotify.mjs (Spotify search, Client Credentials)
-                index.mjs (production server: dist/ + /api/spicy)
-  tests/        unit  integration  e2e
+  shared/
+    ui/                     @auralis/ui: the React app core, consumed as source through the @auralis/ui alias
+      src/
+        App.tsx  bootstrap.tsx          App routes + startApp(): the only thing a platform entry calls
+        app/      Shell.tsx  platform.ts  theme.ts  artworkTheme.ts  ErrorBoundary.tsx  shortcuts.ts
+        api/
+          subsonic/ client.ts  auth.ts  endpoints.ts  types.ts  errors.ts
+          lyrics/   types.ts  registry.ts  providers/{server.ts,lrclib.ts,spicy.ts}
+                    match.ts  lrc.ts  cache.ts  spotifyMatch.ts (scoring)  resolve.ts (Spotify id service)
+        audio/      engine.ts  queue.ts  mediaSession.ts
+        state/      auth.ts  playback.ts  settings.ts
+        features/   library/  search/  player/  nowplaying/  lyrics/  settings/  connect/  social/  effects/
+        ui/         Button.tsx  List.tsx  Slider.tsx  ...
+        lib/        format.ts  http.ts  storage.ts  kvCache.ts (bounded, expiring IndexedDB blob)
+        styles/     tokens.css  global.css
+      tests/        unit  integration            testing/  mock-server.mjs  e2e-helpers.ts
+    apple/          AuralisKit (Swift package)  AuralisUI (SwiftUI shared by macOS + iOS)
+  web/              index.html  src/main.tsx  vite.config.ts  playwright.config.ts  e2e/
+  tauri/            Cargo.toml  src/ (Rust)  tauri.conf.json  icons/  vite.config.ts  frontend/{index.html,main.tsx}
+  android/          Cargo.toml  src/ (Rust)  tauri.conf.json  gen/android (Gradle)  vite.config.ts
+                    frontend/{index.html,main.tsx,mobile.css,mobile/}  tests/  e2e/
+  macos/ , ios/     project.yml (XcodeGen)  Sources/
+  server/           spicy.mjs (key-holding lyrics bridge)  spotify.mjs (Spotify search, Client Credentials)
+                    index.mjs (production server: web/dist + /api/spicy)  vite-plugin.mjs (dev bridge)  tests/
 ```
+
+Layering inside `shared/ui` is unchanged (below). What is new is where the platforms sit: see `docs/STRUCTURE.md`.
 
 ## 4. Data flow
 
@@ -211,8 +220,8 @@ it can never delay or fail playback.
   built server-side), same-site only, per-client rate limit, in-memory caches, no client headers forwarded, secrets and
   the Spotify access token never logged or returned. Without a key or backend the integration is
   inert and the rest of the app is unaffected. The keys are read from `process.env`/`.env` on the Node side only (no
-  `VITE_` prefix, not in `define`), and `tests/integration/no-secret-in-bundle.test.ts`, `e2e/spicy.spec.ts` and
-  `e2e/lyrics-auto.spec.ts` check they cannot reach the bundle or responses.
+  `VITE_` prefix, not in `define`), and `server/tests/no-secret-in-bundle.test.ts`, `web/e2e/spicy.spec.ts` and
+  `web/e2e/lyrics-auto.spec.ts` check they cannot reach the bundle or responses.
 - **No retry loops:** the HTTP client never retries; TanStack Query is configured with `retry: false`. The one exception
   is server-side: a Spotify search answered `401` is retried once with a fresh token. Failures surface
   with a manual "Try again" (or "Sign in again" for rejected credentials).

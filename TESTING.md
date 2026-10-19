@@ -14,7 +14,7 @@
 | E2E | **Playwright** | Real browser: connect → browse → play → lyrics → seek; keyboard; motion prefs. |
 | Perf | Playwright traces + manual DevTools | Scroll, transitions, extended playback, memory. |
 
-Commands: `npm test` (unit+component), `npm run test:e2e`, `npm run typecheck`, `npm run lint`.
+Commands (from the repo root, each runs every workspace that has the script): `npm test` (unit+component), `npm run test:e2e`, `npm run typecheck`, `npm run lint`. Where the suites live: `shared/ui/tests` (app core), `server/tests` (lyrics backend and the secret-leak guard), `android/tests` (phone UI), `web/e2e` and `android/e2e` (Playwright).
 CI gate: typecheck + lint + unit green on every change; e2e before a milestone closes.
 
 ## 2. What must be tested (and what need not)
@@ -124,12 +124,12 @@ criteria above that it affects are met.
 | Command | What it runs |
 |---------|--------------|
 | `npm test` | Vitest (jsdom, plus the Node-environment backend tests): unit, component and MSW-mocked integration tests, 531 tests. No network, no real server, no real Spicy Lyrics key or Spotify credentials. |
-| `npm run typecheck` / `npm run lint` | `tsc -b --noEmit` (app, tests, Playwright specs) / ESLint 9 flat config. |
-| `npm run build` | Type-check + production bundle (`dist/`). |
+| `npm run typecheck` / `npm run lint` | `tsc -p` per workspace (app, tests, Playwright specs) / ESLint 9 flat config plus `scripts/check-boundaries.mjs`, which fails on any import that crosses a platform boundary. |
+| `npm run build` | Type-check + production web bundle (`web/dist/`). `npm run build -w @auralis/tauri` / `-w @auralis/android` build the other two bundles. |
 | `npm run test:e2e` | Playwright against the **production build** and a mock Subsonic server. |
 
-### Browser tests (`e2e/`)
-- `playwright.config.ts` starts two servers: `e2e/mock-server.mjs` (deterministic Subsonic/OpenSubsonic fixtures, real
+### Browser tests (`web/e2e/`, `android/e2e/`)
+- `web/playwright.config.ts` starts two servers (`android/playwright.config.ts` does the same for the phone-UI build, on ports 5299/4699 so both suites can run side by side): `shared/ui/testing/mock-server.mjs` (deterministic Subsonic/OpenSubsonic fixtures, real
   token-auth check, range-capable WAV audio, solid-colour cover art with CORS headers, synced lyrics for one track,
   failure injection via `/__fail?endpoint=…&times=n`, bulk artists via `/__bulk?artists=n`) and `vite build` +
   `vite preview` of the app. It uses a production build on purpose: the dev server's StrictMode fires duplicate
@@ -170,18 +170,18 @@ Not measured: a real device, 60-minute memory behaviour, scrolling a *grid* of t
 ### Lyrics matching and animation (added with automatic matching)
 | Area | Tests |
 |------|-------|
-| Scoring (`tests/unit/spotify-match.test.ts`) | exact match; normalization (case, punctuation, diacritics, quotes, `&`, featuring); multi-artist credits; duration gate and album tie-breaker; live/remix/acoustic/re-recorded/edit rejected both ways; remaster preference; clean vs explicit; ISRC over spelling; ambiguity between different recordings; duplicate titles by other artists; missing artist/duration; low confidence; signals add up |
-| Service (`tests/integration/spotify-auto.test.tsx`) | concurrent dedup; cancellation only when no caller is left; persistent cache per server/user/track identity; TTLs (1 day / 30 days); 429 back-off; malformed candidates; failures not cached |
+| Scoring (`shared/ui/tests/unit/spotify-match.test.ts`) | exact match; normalization (case, punctuation, diacritics, quotes, `&`, featuring); multi-artist credits; duration gate and album tie-breaker; live/remix/acoustic/re-recorded/edit rejected both ways; remaster preference; clean vs explicit; ISRC over spelling; ambiguity between different recordings; duplicate titles by other artists; missing artist/duration; low confidence; signals add up |
+| Service (`shared/ui/tests/integration/spotify-auto.test.tsx`) | concurrent dedup; cancellation only when no caller is left; persistent cache per server/user/track identity; TTLs (1 day / 30 days); 429 back-off; malformed candidates; failures not cached |
 | UI (`spotify-auto.test.tsx`, `spicy-ui.test.tsx`, `lyrics-view.test.tsx`) | automatic match with no user action; ambiguous chooser + fallback + remembered choice; "None of these"; no match → fallback, never a fabricated id; matched but no Spicy lyrics; "Wrong recording" and restore; manual link overrides; external lookups off; backend without Spotify; rapid skipping looks up only the last track; stale match discarded; syllable progress from real timestamps, seeking back un-sings; active line, click-to-seek, manual scroll/follow, reduced-motion instant scroll; Settings status |
-| Backend (`tests/integration/spotify-match-server.test.ts`) | token once and refresh; ISRC → fielded → free-text order; query syntax stripped; malformed items dropped; 429 back-off; 400/403/outage → 502 and one warning without secrets; 401 retried once; route validation (fields, repeats, sizes), 503 when unconfigured, cross-site refused, cache + coalescing, shared rate limit, API base with a path |
-| Themes (`tests/unit/themes.test.ts`) | dimmed lyric lines ≥ 3:1 on `--bg` in all nine presets |
+| Backend (`server/tests/spotify-match-server.test.ts`) | token once and refresh; ISRC → fielded → free-text order; query syntax stripped; malformed items dropped; 429 back-off; 400/403/outage → 502 and one warning without secrets; 401 retried once; route validation (fields, repeats, sizes), 503 when unconfigured, cross-site refused, cache + coalescing, shared rate limit, API base with a path |
+| Themes (`shared/ui/tests/unit/themes.test.ts`) | dimmed lyric lines ≥ 3:1 on `--bg` in all nine presets |
 
 Measured in a real browser (headless Chromium 154, this machine): every active line settled at exactly 32 % of the lyrics
 viewport (210 px of 656) across four consecutive lines; ~56 style writes per second while a line is sung (one per
 frame); painted progress froze exactly on pause and continued on resume.
 
 ### Accessibility
-Automated: axe-core in jsdom (`tests/integration/m5-ui.test.tsx`, contrast rule off) and in a real browser
+Automated: axe-core in jsdom (`shared/ui/tests/integration/m5-ui.test.tsx`, contrast rule off) and in a real browser
 (`e2e/a11y.spec.ts`, contrast on) found no serious or critical violations. Not covered by any tool: a real screen
 reader pass, and judging how themes *look*. Do those by hand.
 
@@ -194,7 +194,7 @@ reader pass, and judging how themes *look*. Do those by hand.
 - The syllable sweep was judged against fixture timings on silent audio, not against real vocals.
 - Audio effects are measured on a test tone in Chromium. How they sound on music (phase-vocoder artefacts, reverb
   character) is a listening judgement: see the manual step in `README.md`. Unit tests use a recording Web Audio fake
-  (`tests/fakeWebAudio.ts`) for wiring and lifecycle, and run the DSP itself on plain arrays.
+  (`shared/ui/tests/fakeWebAudio.ts`) for wiring and lifecycle, and run the DSP itself on plain arrays.
 - Real Navidrome behaviour (CORS on cover art, `search3` with an empty query, `getLyricsBySongId`) is only checked
   against the mock; use the manual checklist in `README.md`.
 - Albums/Recent/Recently Added grow without bound as "Load more" is pressed (no virtualization for grids).
@@ -204,18 +204,18 @@ reader pass, and judging how themes *look*. Do those by hand.
 ## 10. Navigation redesign, favourites and play reporting (M7)
 
 ### What was added
-- `e2e/actions.spec.ts` (6): favourites survive a reload and reach the Favorites page; add a track to a playlist then
+- `web/e2e/actions.spec.ts` (6): favourites survive a reload and reach the Favorites page; add a track to a playlist then
   remove it there; the track menu is keyboard operable and returns focus; playing a track reports it to the server and
   the preference stops it; the collapsed sidebar persists and keeps every destination reachable; a new route starts at
   the top of the page.
-- `tests/integration/library-actions.test.tsx` (13): starred state read from the server; `star`/`unstar` parameter
+- `shared/ui/tests/integration/library-actions.test.tsx` (13): starred state read from the server; `star`/`unstar` parameter
   shapes (`id` for songs, `albumId`/`artistId` for ID3 albums and artists); optimistic flip, rollback and warning on
   failure; a star on the album page showing up on Favorites; add to an existing playlist; create a playlist from a
   track; remove by position; "Remove from this playlist" only inside a playlist; navigation from the menu; a playlist
   failure surfacing; `scrobble` announce → submit at half → never twice; nothing sent when the preference is off.
-- `tests/unit/render-scope.test.tsx` (1): the page play controls do not re-render on playhead ticks. Checked against the
+- `shared/ui/tests/unit/render-scope.test.tsx` (1): the page play controls do not re-render on playhead ticks. Checked against the
   previous code, where it fails.
-- The MSW server and `e2e/mock-server.mjs` now hold starred and playlist state, so a refetch after a write behaves like
+- The MSW server and `shared/ui/testing/mock-server.mjs` now hold starred and playlist state, so a refetch after a write behaves like
   a real server (this is what exposed the optimistic-update path properly).
 
 ### Measured (headless Chromium 154, software rendering, this development machine, production build)

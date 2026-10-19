@@ -1,6 +1,6 @@
 # Windows and Linux (Tauri)
 
-The desktop app is the existing web app in a native webview (`src-tauri/`, Tauri 2). No frontend code is duplicated; `beforeBuildCommand` runs `npm run build` and the shell loads `dist/`.
+The desktop app is the existing web app in a native webview (`tauri/`, Tauri 2). The UI is not copied: `tauri/frontend/` is a thin entry point over the shared app core (`shared/ui`), `beforeBuildCommand` runs `npm run build` in `tauri/` and the shell loads `tauri/frontend/dist`. The desktop bundle is built separately from the web one.
 
 **Verification status: see "Verified" at the bottom. Windows has not been built.**
 
@@ -14,15 +14,16 @@ The desktop app is the existing web app in a native webview (`src-tauri/`, Tauri
 - **Windows:** Visual Studio Build Tools ("Desktop development with C++"), WebView2 (preinstalled on Windows 11), Rust MSVC toolchain. NSIS installer target needs NSIS (Tauri downloads it).
 
 ## Commands
-NixOS: `nix-shell` (repo-root `shell.nix`) provides Rust and all Linux libraries; then `cd src-tauri && cargo build`.
+NixOS: `nix-shell` (repo-root `shell.nix`) provides Rust and all Linux libraries; then `cd tauri && cargo build`.
 
 ```sh
 npm ci
-cd src-tauri
-cargo tauri dev        # runs `npm run dev` and opens the window
+cd tauri
+cargo tauri dev        # runs `npm run dev` (tauri/vite.config.ts, port 5174) and opens the window
 cargo tauri build      # bundles: deb + AppImage (Linux), NSIS .exe (Windows)
+# or, without cargo-tauri, from the repo root: npm run dev:tauri / npm run build:tauri
 ```
-Icons in `src-tauri/icons/` are a flat placeholder. Replace with `cargo tauri icon path/to/1024.png`.
+Icons in `tauri/icons/` are a flat placeholder. Replace with `cargo tauri icon path/to/1024.png`.
 
 ## Lyrics from the desktop app
 Production builds default to the hosted backend `https://lyrics.folk3s.com`. Users can change or disable it at runtime in **Settings → Lyrics** (stored on the device, no rebuild). To bake a different default: `VITE_AURALIS_BACKEND_URL=https://lyrics.example.com cargo tauri build`.
@@ -37,5 +38,5 @@ The backend must list the webview origin in `AURALIS_ALLOWED_ORIGINS`: `http://t
 
 ## Verified
 - Linux (NixOS, Wayland): `cargo build` (debug) succeeds and the window opens and renders the connect screen against `npm run dev`. The shell sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` on Linux because WebKitGTK crashed without it here.
-- Linux: `cargo check` in `src-tauri/` succeeded (Tauri 2.12 against WebKitGTK 4.1, via a Nix shell): config, `generate_context!` and icons are valid. **Not done:** `cargo tauri build`, launching the window, audio playback, media keys, packaging.
+- Linux: `cargo check` in `tauri/` succeeded (Tauri 2.12 against WebKitGTK 4.1, via a Nix shell): config, `generate_context!` and icons are valid. **Not done:** `cargo tauri build`, launching the window, audio playback, media keys, packaging.
 - Windows: nothing run.

@@ -1,5 +1,9 @@
 # Auralis — Tasks
 
+> **Layout note (October 2026):** this log predates the per-platform layout. Paths below that start with `src/`, `tests/`,
+> `e2e/`, `src-tauri/` or `apple/` now live in: `shared/ui/src` (app core), `android/frontend/mobile` (phone UI),
+> `web/` (entry, Vite, e2e), `tauri/`, `android/`, `macos/` + `ios/` and `shared/apple/`. See `docs/STRUCTURE.md`.
+
 > Ordered, actionable implementation checklist. Work top-to-bottom; each milestone ends at its
 > **Done when** gate (see PLAN.md). Check items off as completed. Reference ARCHITECTURE.md for
 > boundaries, API.md for endpoints, DESIGN.md for visuals, TESTING.md for the checks.

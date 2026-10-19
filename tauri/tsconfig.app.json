@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": { "@auralis/ui/*": ["../shared/ui/src/*"] }
+  },
+  "include": ["frontend"],
+  "exclude": ["frontend/dist"]
+}

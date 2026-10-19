@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.node.base.json",
+  "compilerOptions": { "types": ["node", "vitest/globals", "vite/client"] },
+  "include": ["*.d.mts", "tests", "vitest.config.ts"]
+}

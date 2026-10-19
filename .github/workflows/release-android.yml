@@ -29,17 +29,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: aarch64-linux-android }
       - run: npm ci
-      - name: Init Android project
-        run: |
-          export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
-          npx -y @tauri-apps/cli@2 android init --ci
-          # Release builds disable cleartext by default, but self-hosted music servers are often plain http on the LAN.
-          sed -i 's/\${usesCleartextTraffic}/true/' src-tauri/gen/android/app/src/main/AndroidManifest.xml
-          grep -n usesCleartextTraffic src-tauri/gen/android/app/src/main/AndroidManifest.xml
+      # android/gen/android is committed (with usesCleartextTraffic on: self-hosted music servers are often plain http on the
+      # LAN, and release builds would otherwise disable it), so there is no `android init` step.
       - name: Build APK
+        working-directory: android
         run: |
           export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
-          npx -y @tauri-apps/cli@2 android build --apk --target aarch64 --ci
+          npx tauri android build --apk --target aarch64 --ci
       # An unsigned APK cannot be installed. With ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD secrets set, every release
       # shares one signature and updates install over older builds; without them a throwaway key is used (uninstall first).
       - name: Sign
@@ -48,7 +44,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
-          UNSIGNED="$(find src-tauri/gen/android -name '*-unsigned.apk' | head -1)"
+          UNSIGNED="$(find android/gen/android -name '*-unsigned.apk' | head -1)"
           [ -n "$UNSIGNED" ] || { echo "no unsigned apk found"; exit 1; }
           export PASS="auralis-ci"
           if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then

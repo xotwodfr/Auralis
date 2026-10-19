@@ -1,0 +1,31 @@
+{
+  "name": "@auralis/android",
+  "private": true,
+  "version": "0.2.7",
+  "type": "module",
+  "description": "Auralis Android app: Tauri 2 mobile shell (Rust + the Gradle project in gen/android) around the phone UI in frontend/.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.app.json && vite build",
+    "tauri": "tauri",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "@auralis/ui": "*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@tauri-apps/cli": "^2.12.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-react": "^6.1.2",
+    "axe-core": "^4.14.0",
+    "jsdom": "^30.1.2",
+    "typescript": "~5.9",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
+  }
+}

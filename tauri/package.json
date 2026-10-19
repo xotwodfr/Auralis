@@ -1,0 +1,23 @@
+{
+  "name": "@auralis/tauri",
+  "private": true,
+  "version": "0.2.7",
+  "type": "module",
+  "description": "Auralis desktop (Linux, Windows): Tauri 2 shell (Rust, this directory) around its own build of the shared app core (frontend/).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.app.json && vite build",
+    "tauri": "tauri",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "@auralis/ui": "*"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.2",
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "~5.9",
+    "vite": "^8.3.4"
+  }
+}

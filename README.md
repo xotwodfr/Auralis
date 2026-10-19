@@ -35,10 +35,16 @@ Word-by-word lyrics from Spicy Lyrics: the syllable being sung lifts and glows.
 
 | Platform | Technology | Where |
 |---|---|---|
-| Browser | React + Vite | `src/` |
-| Linux, Windows, Android | Tauri 2 shell around the web app | `src-tauri/` |
-| iOS 26+, macOS 26+ | Native SwiftUI | `apple/` |
+| Browser | React + Vite | `web/` |
+| Linux, Windows | Tauri 2 desktop shell | `tauri/` |
+| Android | Tauri 2 mobile shell with its own phone UI | `android/` |
+| macOS 26+ | Native SwiftUI | `macos/` |
+| iOS 26+ | Native SwiftUI | `ios/` |
+| Shared code | Web app core (`shared/ui`), Apple Swift package and SwiftUI (`shared/apple`) | `shared/` |
 | Lyrics backend | Node, no dependencies, Docker image | `server/`, `Dockerfile` |
+
+Each platform folder builds on its own; what they share, and the rules that keep them apart, are in
+[`docs/STRUCTURE.md`](docs/STRUCTURE.md).
 
 Tagged releases (`v*`) build a portable Windows exe and a signed Android APK in CI. What is verified on each platform is
 tracked honestly in [`docs/PLATFORMS.md`](docs/PLATFORMS.md).
@@ -51,6 +57,7 @@ tracked honestly in [`docs/PLATFORMS.md`](docs/PLATFORMS.md).
 | [`ARCHITECTURE.md`](ARCHITECTURE.md), [`DESIGN.md`](DESIGN.md) | How the app is built and styled |
 | [`API.md`](API.md) | Subsonic usage and the lyrics backend API |
 | [`TESTING.md`](TESTING.md) | Test strategy and the browser-test setup |
+| [`docs/STRUCTURE.md`](docs/STRUCTURE.md) | Repository layout, what is shared, dependency rules, how to build each platform |
 | [`docs/`](docs) | Apple, desktop, backend and platform status |
 
 ## Run it
@@ -60,9 +67,9 @@ Requires Node 20.12+ (developed on Node 24). Docker is optional and only runs th
 ```sh
 npm install
 cp .env.example .env     # optional: only needed for Spicy Lyrics (see below); .env is git-ignored
-npm run dev              # http://localhost:5173 (also serves /api/spicy/*)
-npm run build            # production bundle in dist/
-npm start                # production server: dist/ + /api/spicy/* on http://127.0.0.1:8787
+npm run dev              # web app on http://localhost:5173 (also serves /api/spicy/*)
+npm run build            # production web bundle in web/dist/
+npm start                # production server: web/dist/ + /api/spicy/* on http://127.0.0.1:8787
 ```
 
 Connect with your server address, username and password. Requirements on the server side:
@@ -131,11 +138,11 @@ Security properties: the key exists only in the backend process (never in the bu
 ## Checks
 
 ```sh
-npm test            # unit + component + integration (Vitest, jsdom, MSW)
-npm run typecheck
-npm run lint
-npm run build
-npm run test:e2e    # real-browser tests (Playwright) against a built app and a mock server
+npm test            # every workspace: shared/ui (Vitest, jsdom, MSW), server, android phone UI
+npm run typecheck   # every workspace
+npm run lint        # ESLint + the dependency-boundary check (docs/STRUCTURE.md)
+npm run build       # the web bundle (build:tauri / build:android build the other platforms)
+npm run test:e2e    # real-browser tests (Playwright): web, and the android phone UI, against a built app and a mock server
 ```
 
 See `TESTING.md` §9 for the browser-test setup (including using a system Chromium) and what each suite covers.
@@ -168,4 +175,4 @@ Automated tests never touch a real server. Before relying on a build, walk throu
 
 ## Other platforms
 
-Web is the reference implementation. Native Apple apps (`apple/`), Tauri desktop shell (`src-tauri/`) and the lyrics backend container are described, with honest verification status and a feature matrix, in [`docs/PLATFORMS.md`](docs/PLATFORMS.md), [`docs/APPLE.md`](docs/APPLE.md), [`docs/DESKTOP.md`](docs/DESKTOP.md) and [`docs/BACKEND.md`](docs/BACKEND.md).
+Web is the reference implementation. Native Apple apps (`macos/`, `ios/`), the Tauri desktop shell (`tauri/`), the Android app (`android/`) and the lyrics backend container are described, with honest verification status and a feature matrix, in [`docs/PLATFORMS.md`](docs/PLATFORMS.md), [`docs/APPLE.md`](docs/APPLE.md), [`docs/DESKTOP.md`](docs/DESKTOP.md) and [`docs/BACKEND.md`](docs/BACKEND.md).

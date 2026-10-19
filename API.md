@@ -219,7 +219,7 @@ explicit, isrc}`. Answers are cached in memory for 24 h (empty for 1 h) and conc
 upstream call; after a 429 it stops calling Spotify until `Retry-After` has passed. `/api/spicy/health` reports
 `{ enabled, matching }`; `matching` is true only when both the Spicy key and the Spotify credentials are set.
 
-**Scoring (`src/api/lyrics/spotifyMatch.ts`), every point explained by a signal.**
+**Scoring (`shared/ui/src/api/lyrics/spotifyMatch.ts`), every point explained by a signal.**
 - Normalization: NFKD with Latin diacritics removed, case-fold, apostrophes dropped, `&`/`+` → `and`, punctuation to
   spaces. Featuring credits are removed from titles and artists. Bracketed or dash-suffixed qualifiers are split off
   the title; those naming a version are tokens, the rest stay part of the title ("(I Can't Get No) Satisfaction").
@@ -237,7 +237,7 @@ upstream call; after a 429 it stops calling Spotify until `Retry-After` has pass
   question. Otherwise, if anything scores ≥ 0.5 (or the artist is unknown), the distinct plausible recordings (≤5) are
   offered to the user; else "no match". Without a duration or an artist nothing is accepted without the ISRC.
 
-**Client (`src/api/lyrics/resolve.ts`).** Runs only on track change when *External lookups* is on, the user has no
+**Client (`shared/ui/src/api/lyrics/resolve.ts`).** Runs only on track change when *External lookups* is on, the user has no
 link of their own for the track, and the backend reports `matching`. Waits 300 ms first (rapid skipping never reaches
 the network), 6 s timeout, cancelled when the track changes (a shared lookup is cancelled only when no caller wants
 it), concurrent calls deduplicated. Results persist in IndexedDB keyed by server + user + track id + title/artist/

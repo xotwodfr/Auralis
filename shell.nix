@@ -1,7 +1,7 @@
 { pkgs ? import <nixpkgs> { } }:
-# Linux Tauri dev shell: `nix-shell` then `cd src-tauri && cargo build`.
+# Linux Tauri dev shell: `nix-shell` then `cd tauri && cargo build`.
 pkgs.mkShell {
-  # Read by src-tauri/build.rs and baked into the binary so it finds the TLS backend outside this shell too.
+  # Read by tauri/build.rs and baked into the binary so it finds the TLS backend outside this shell too.
   # Same idea for GStreamer: appsink is in gst-plugins-base (libgstapp), autoaudiosink in gst-plugins-good (libgstautodetect).
   AURALIS_GST_PLUGIN_PATH = pkgs.lib.makeSearchPath "lib/gstreamer-1.0" (with pkgs.gst_all_1; [
     gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-libav

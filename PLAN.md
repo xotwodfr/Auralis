@@ -1,5 +1,9 @@
 # Auralis — Plan
 
+> **Layout note (October 2026):** this log predates the per-platform layout. Paths below that start with `src/`, `tests/`,
+> `e2e/`, `src-tauri/` or `apple/` now live in: `shared/ui/src` (app core), `android/frontend/mobile` (phone UI),
+> `web/` (entry, Vite, e2e), `tauri/`, `android/`, `macos/` + `ios/` and `shared/apple/`. See `docs/STRUCTURE.md`.
+
 > Premium Navidrome / Subsonic music client with an Apple-inspired Liquid Glass interface.
 > This document defines goals, MVP scope, assumptions, and milestones. It is the entry point;
 > see ARCHITECTURE.md, DESIGN.md, API.md, TESTING.md, TASKS.md for the detail.

@@ -1,5 +1,5 @@
-// Production server: serves the built app (dist/) and the Spicy Lyrics bridge from one origin.
-//   npm run build && npm start
+// Production server: serves the built web app (web/dist) and the Spicy Lyrics bridge from one origin.
+//   npm run build:web && npm start
 // Configuration comes from environment variables (see .env.example); a local .env file is read if present.
 import { existsSync, createReadStream, statSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -10,7 +10,7 @@ import { spicyHandlerFromEnv } from './spicy.mjs'
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 if (existsSync(join(root, '.env'))) process.loadEnvFile?.(join(root, '.env')) // existing environment variables win
 
-const DIST = join(root, 'dist')
+const DIST = join(root, 'web', 'dist')
 const PORT = Number(process.env.PORT ?? 8787)
 const HOST = process.env.HOST ?? '127.0.0.1'
 const spicy = spicyHandlerFromEnv(process.env)
@@ -39,7 +39,7 @@ const server = createServer(async (req, res) => {
     const file = join(DIST, path)
     if (!file.startsWith(DIST)) return void res.writeHead(403).end() // path traversal
     if (hasApp && existsSync(file) && statSync(file).isFile()) return serveFile(res, file, path.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache')
-    if (!hasApp) return void res.writeHead(404, { 'content-type': 'application/json' }).end('{"error":"not_found"}') // API-only deployment (Docker): no dist/
+    if (!hasApp) return void res.writeHead(404, { 'content-type': 'application/json' }).end('{"error":"not_found"}') // API-only deployment (Docker): no web/dist
     serveFile(res, join(DIST, 'index.html'), 'no-cache') // SPA fallback
   } catch {
     if (!res.headersSent) res.writeHead(500)
@@ -50,7 +50,7 @@ const server = createServer(async (req, res) => {
 // Slow-loris bounds; every route here is a small GET.
 server.headersTimeout = 10_000
 server.requestTimeout = 15_000
-if (!hasApp) console.warn('dist/ not found: serving the lyrics API only.')
+if (!hasApp) console.warn('web/dist not found: serving the lyrics API only.')
 server.listen(PORT, HOST, () => {
   console.log(`Auralis on http://${HOST}:${PORT}  (Spicy Lyrics bridge: ${spicy.enabled ? 'enabled' : 'disabled: SPICY_LYRICS_SECRET_KEY not set'})`)
 })

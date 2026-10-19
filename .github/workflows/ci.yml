@@ -4,6 +4,7 @@ on:
   pull_request:
 
 jobs:
+  # shared/ui, server, web and the frontends of tauri and android: everything that is TypeScript.
   web:
     runs-on: ubuntu-latest
     steps:
@@ -14,7 +15,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - run: npm run build
+      - run: npm run build:web
+      - run: npm run build -w @auralis/tauri
+      - run: npm run build -w @auralis/android
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
 
@@ -26,10 +29,11 @@ jobs:
         with: { node-version: 22, cache: npm }
       - uses: dtolnay/rust-toolchain@stable
       - run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev librsvg2-dev libxdo-dev libssl-dev
-      - run: npm ci && npm run build
-      - run: cargo check --manifest-path src-tauri/Cargo.toml
+      - run: npm ci && npm run build -w @auralis/tauri
+      - run: cargo check --manifest-path tauri/Cargo.toml
+      - run: cargo check --manifest-path android/Cargo.toml
 
-  apple:
+  macos:
     # Needs an image with Xcode 26 (iOS/macOS 26 SDKs). If this job fails to start, the runner label is the first thing to check.
     runs-on: macos-26
     steps:
@@ -40,20 +44,20 @@ jobs:
           xcrun --sdk macosx --show-sdk-version
       - run: brew install xcodegen
       - name: Test AuralisKit
-        working-directory: apple/AuralisKit
+        working-directory: shared/apple/AuralisKit
         run: |
           set -o pipefail
           swift test 2>&1 | tee test.log || { grep -E ": error: " test.log | sort -u | head -40 | sed 's/^/::error::/'; exit 1; }
       - run: xcodegen generate
-        working-directory: apple
+        working-directory: macos
       - name: Build macOS app
-        working-directory: apple
+        working-directory: macos
         # Compiler errors become annotations: they are readable on the run page without downloading logs.
         run: |
           set -o pipefail
           xcodebuild build -project Auralis.xcodeproj -scheme AuralisMac -destination 'generic/platform=macOS' -derivedDataPath build/mac CODE_SIGNING_ALLOWED=NO 2>&1 | tee build-mac.log || { grep -E ": error: " build-mac.log | sort -u | head -40 | sed 's/^/::error::/'; exit 1; }
       - name: Package macOS app
-        working-directory: apple
+        working-directory: macos
         run: |
           APP=$(find build/mac/Build/Products -maxdepth 2 -name 'Auralis.app' -print -quit)
           test -n "$APP" || { echo "Auralis.app not found"; exit 1; }
@@ -68,10 +72,18 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Auralis-macOS-unsigned
-          path: apple/Auralis-macOS-unsigned.zip
+          path: macos/Auralis-macOS-unsigned.zip
           if-no-files-found: error
+
+  ios:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate
+        working-directory: ios
       - name: Build iOS app
-        working-directory: apple
+        working-directory: ios
         run: |
           set -o pipefail
           xcodebuild build -project Auralis.xcodeproj -scheme AuralisiOS -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO 2>&1 | tee build-ios.log || { grep -E ": error: " build-ios.log | sort -u | head -40 | sed 's/^/::error::/'; exit 1; }
