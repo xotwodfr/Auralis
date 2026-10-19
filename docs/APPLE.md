@@ -13,7 +13,7 @@ Only system APIs, no CSS-style imitation:
 
 ## macOS ↔ web map
 
-The macOS app follows the web app (the reference) screen for screen. Colours, radii and type sizes come from `src/styles/tokens.css` (`apple/Shared/Theme.swift`), icons are the web's own SVGs (`apple/Shared/Assets.xcassets/Icons`, generated from `src/ui/Icon.tsx`).
+The macOS app follows the web app (the reference) screen for screen. Colours, radii and type sizes come from `shared/ui/src/styles/tokens.css` (`shared/apple/AuralisUI/Theme.swift`), icons are the web's own SVGs (`shared/apple/AuralisUI/Assets.xcassets/Icons`, generated from `shared/ui/src/ui/Icon.tsx`).
 
 | Web | macOS |
 |---|---|
@@ -38,14 +38,15 @@ The macOS app follows the web app (the reference) screen for screen. Colours, ra
 # Linux
 git add -A && git commit -m "..." && git push
 # Mac
-git clone <your-repo-url> Auralis && cd Auralis/apple
-xcodegen generate            # creates Auralis.xcodeproj (git-ignored)
+git clone <your-repo-url> Auralis && cd Auralis/macos     # or Auralis/ios
+xcodegen generate            # creates Auralis.xcodeproj (git-ignored) with that app's scheme only
 open Auralis.xcodeproj
 ```
-`AuralisKit` tests need no project: `cd apple/AuralisKit && swift test`.
+The macOS app (`macos/`, scheme `AuralisMac`) and the iOS app (`ios/`, scheme `AuralisiOS`) are separate Xcode projects. Both compile `shared/apple/AuralisUI` and depend on the `shared/apple/AuralisKit` package.
+`AuralisKit` tests need no project: `cd shared/apple/AuralisKit && swift test`.
 
 ## Build and run
-1. Open `Auralis.xcodeproj`. For each target (`AuralisiOS`, `AuralisMac`): Signing & Capabilities → Team → your **Personal Team**. Change the bundle identifier (`app.auralis.player`) to something unique if Xcode says it's taken.
+1. Open `macos/Auralis.xcodeproj` and/or `ios/Auralis.xcodeproj`. For each target (`AuralisMac`, `AuralisiOS`): Signing & Capabilities → Team → your **Personal Team**. Change the bundle identifier (`app.auralis.player`) to something unique if Xcode says it's taken.
 2. **macOS:** select `AuralisMac` → My Mac → Run.
 3. **iOS:** simulator needs the iOS 26 runtime (Xcode → Settings → Components). Real iPhone: enable Developer Mode (Settings → Privacy & Security), plug in, trust the computer, select it, Run; then trust your profile under Settings → General → VPN & Device Management.
 4. In the app, enter your Navidrome/Subsonic address, username, password. Plain `http://` LAN servers work because `NSAllowsArbitraryLoads` is set (tighten when everything is on https).
@@ -59,7 +60,7 @@ open Auralis.xcodeproj
 | Family member's phone | Only by plugging into your Mac and re-signing every 7 days | TestFlight or ad-hoc, reliably |
 | macOS app for someone else | Unsigned/ad-hoc apps hit Gatekeeper; they must right-click → Open | Developer ID + notarization |
 
-Nothing in the project needs a paid account today. `DEVELOPMENT_TEAM` in `apple/project.yml` is blank; put a team ID there later.
+Nothing in the project needs a paid account today. `DEVELOPMENT_TEAM` in `macos/project.yml` and `ios/project.yml` is blank; put a team ID there later.
 
 ## What the native app does not do yet
 - Lyrics and Spotify matches are cached in memory only (the web keeps them in IndexedDB), so a relaunch looks them up again.

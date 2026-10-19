@@ -1,14 +1,15 @@
-# XcodeGen spec: the .xcodeproj is generated (and git-ignored) so project files never conflict between machines.
-#   brew install xcodegen && cd apple && xcodegen generate && open Auralis.xcodeproj
+# XcodeGen spec for the native iOS app: the .xcodeproj is generated (and git-ignored) so project files never conflict between machines.
+#   brew install xcodegen && cd ios && xcodegen generate && open Auralis.xcodeproj
+# Sources: ios/Sources (this app's entry point and shell) + shared/apple/AuralisUI (SwiftUI shared with the macOS app).
+# The AuralisKit Swift package (shared/apple/AuralisKit) is a dependency, not copied code.
 name: Auralis
 options:
   bundleIdPrefix: app.auralis
   deploymentTarget:
     iOS: "26.0"
-    macOS: "26.0"
 packages:
   AuralisKit:
-    path: AuralisKit
+    path: ../shared/apple/AuralisKit
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -19,7 +20,7 @@ targets:
   AuralisiOS:
     type: application
     platform: iOS
-    sources: [Shared, iOS]
+    sources: [Sources, ../shared/apple/AuralisUI]
     dependencies:
       - package: AuralisKit
     settings:
@@ -30,36 +31,11 @@ targets:
         # Assets.xcassets only holds the shared line icons; there is no app icon set yet.
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
     info:
-      path: iOS/Info.plist
+      path: Sources/Info.plist
       properties:
         CFBundleDisplayName: Auralis
         UILaunchScreen: {}
         UIBackgroundModes: [audio]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         # Self-hosted servers are often plain http on the LAN (http://nas.local:4533). Tighten once everything is behind https.
-        NSAppTransportSecurity: { NSAllowsArbitraryLoads: true }
-  AuralisMac:
-    type: application
-    platform: macOS
-    sources: [Shared, macOS]
-    dependencies:
-      - package: AuralisKit
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.auralis.player.mac
-        PRODUCT_NAME: Auralis
-        ENABLE_HARDENED_RUNTIME: YES
-        # Universal binary: Intel Macs (incl. Hackintosh) need x86_64; Release/Debug default to active arch only.
-        ARCHS: "arm64 x86_64"
-        ONLY_ACTIVE_ARCH: NO
-    entitlements:
-      path: macOS/Auralis.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.network.client: true
-    info:
-      path: macOS/Info.plist
-      properties:
-        CFBundleDisplayName: Auralis
-        LSApplicationCategoryType: public.app-category.music
         NSAppTransportSecurity: { NSAllowsArbitraryLoads: true }
