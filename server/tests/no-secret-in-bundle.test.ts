@@ -20,7 +20,9 @@ function filesIn(dir: string, skip: string[] = []): string[] {
 
 describe('the secret key stays server-side', () => {
   it('is not visible to client code through import.meta.env', () => {
-    expect(Object.keys(import.meta.env).filter((k) => /SPICY|SPOTIFY|SECRET/i.test(k))).toEqual([])
+    // Vitest mirrors all of process.env into import.meta.env, but Vite only ever ships VITE_-prefixed keys to the client;
+    // without this filter the test fails on any machine that has the real keys exported in its shell.
+    expect(Object.keys(import.meta.env).filter((k) => k.startsWith('VITE_') && /SPICY|SPOTIFY|SECRET/i.test(k))).toEqual([])
   })
 
   it('no frontend source reads it or contains a key', () => {
