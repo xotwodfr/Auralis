@@ -1,14 +1,14 @@
 # Lyrics backend
 
-`server/` is a dependency-free Node service (Node 20.12+). `server/index.mjs` serves the built web app *and* `/api/spicy/*`; the Docker image runs the same file with no `dist/`, so it serves only the API.
+`server/` is a dependency-free Node service (Node 20.12+). `server/index.mjs` serves the built web app *and* `/api/spicy/*`; the Docker image runs the same file with no `web/dist/`, so it serves only the API.
 
 What it does, from the source: three fixed GET routes (`/api/spicy/health`, `/lyrics/<22-char Spotify id>`, `/match?title&artist&isrc`), a server-held Spicy Lyrics key and Spotify client credentials, 8 s upstream timeout, 2 MB cap, per-client rate limit (default 30/min), bounded in-memory cache, same-origin-only unless `AURALIS_ALLOWED_ORIGINS`. Auralis web falls back to server lyrics and LRCLIB when the backend is absent or unconfigured.
 
 ## Local development
 ```sh
 cp .env.example .env     # fill SPICY_LYRICS_SECRET_KEY (and optionally SPOTIFY_*); .env is git-ignored
-npm run dev              # the Vite dev server mounts the same handler
-npm test                 # includes server tests with mocked upstream
+npm run dev              # the Vite dev servers (web, tauri, android) mount the same handler via server/vite-plugin.mjs
+npm test -w @auralis/server   # server tests with mocked upstream
 ```
 Docker, locally:
 ```sh
@@ -91,4 +91,4 @@ docker compose down                                               # stop; remove
 **Native apps:** the SwiftUI apps do not call this backend yet. When they do, native `URLSession` requests carry no `Origin`, so they pass the browser-oriented origin check, which means the rate limiter is then the only protection. Consider a shared token before exposing the endpoint publicly.
 
 ## Secrets
-`SPICY_LYRICS_SECRET_KEY`, `SPOTIFY_CLIENT_SECRET` live only in the server environment. Only `VITE_AURALIS_BACKEND_URL` (a public address) is client-visible. `tests/integration/no-secret-in-bundle.test.ts` guards the bundle.
+`SPICY_LYRICS_SECRET_KEY`, `SPOTIFY_CLIENT_SECRET` live only in the server environment. Only `VITE_AURALIS_BACKEND_URL` (a public address) is client-visible. `server/tests/no-secret-in-bundle.test.ts` guards the bundle.

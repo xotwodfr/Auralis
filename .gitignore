@@ -15,10 +15,13 @@ test-results
 .spartan/ai.env
 
 # Apple
-apple/*.xcodeproj
-apple/**/Info.plist
-apple/**/*.entitlements
-apple/AuralisKit/.build
+macos/*.xcodeproj
+macos/**/Info.plist
+macos/**/*.entitlements
+ios/*.xcodeproj
+ios/**/Info.plist
+ios/**/*.entitlements
+shared/apple/AuralisKit/.build
 xcuserdata
 DerivedData
 .build

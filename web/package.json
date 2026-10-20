@@ -1,0 +1,25 @@
+{
+  "name": "@auralis/web",
+  "private": true,
+  "version": "0.2.7",
+  "type": "module",
+  "description": "The Auralis web app: entry point, Vite build, dev-server lyrics bridge and Playwright e2e.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.app.json && vite build",
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "@auralis/ui": "*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-react": "^6.1.2",
+    "axe-core": "^4.14.0",
+    "typescript": "~5.9",
+    "vite": "^8.3.4"
+  }
+}

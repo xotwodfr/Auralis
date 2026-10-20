@@ -1,0 +1,44 @@
+# XcodeGen spec for the native macOS app: the .xcodeproj is generated (and git-ignored) so project files never conflict between machines.
+#   brew install xcodegen && cd macos && xcodegen generate && open Auralis.xcodeproj
+# Sources: macos/Sources (this app's entry point and shell) + shared/apple/AuralisUI (SwiftUI shared with the iOS app).
+# The AuralisKit Swift package (shared/apple/AuralisKit) is a dependency, not copied code.
+name: Auralis
+options:
+  bundleIdPrefix: app.auralis
+  deploymentTarget:
+    macOS: "26.0"
+packages:
+  AuralisKit:
+    path: ../shared/apple/AuralisKit
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    # Free Apple Account: pick your Personal Team in Xcode (Signing & Capabilities). A paid team ID goes here later.
+    DEVELOPMENT_TEAM: ""
+targets:
+  AuralisMac:
+    type: application
+    platform: macOS
+    sources: [Sources, ../shared/apple/AuralisUI]
+    dependencies:
+      - package: AuralisKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.auralis.player.mac
+        PRODUCT_NAME: Auralis
+        ENABLE_HARDENED_RUNTIME: YES
+        # Universal binary: Intel Macs (incl. Hackintosh) need x86_64; Release/Debug default to active arch only.
+        ARCHS: "arm64 x86_64"
+        ONLY_ACTIVE_ARCH: NO
+    entitlements:
+      path: Sources/Auralis.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: Auralis
+        LSApplicationCategoryType: public.app-category.music
+        NSAppTransportSecurity: { NSAllowsArbitraryLoads: true }

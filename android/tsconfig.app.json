@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    "baseUrl": ".",
+    "paths": { "@auralis/ui/*": ["../shared/ui/src/*"] }
+  },
+  "include": ["frontend", "tests"],
+  "exclude": ["frontend/dist"]
+}

@@ -43,28 +43,37 @@ app/        routing, providers, error boundaries, theme        (top)
   not stored twice.
 - **`ui`** is dumb and reusable. Screens compose `ui` + hooks into `state`/`api`.
 
-## 3. Directory layout (target)
+## 3. Directory layout
 
 ```
 Auralis/
-  index.html  package.json  tsconfig.json  vite.config.ts
-  src/
-    main.tsx  App.tsx
-    app/        routes.tsx  providers.tsx  theme.ts  ErrorBoundary.tsx
-    api/
-      subsonic/ client.ts  auth.ts  endpoints.ts  types.ts  errors.ts
-      lyrics/   types.ts  registry.ts  providers/{server.ts,lrclib.ts,spicy.ts}
-                match.ts  lrc.ts  cache.ts  spotifyMatch.ts (scoring)  resolve.ts (Spotify id service)
-    audio/      engine.ts  queue.ts  mediaSession.ts
-    state/      auth.ts  playback.ts  settings.ts
-    features/   library/  search/  player/  nowplaying/  lyrics/  settings/  connect/
-    ui/         Glass*.tsx  Button.tsx  List.tsx  Slider.tsx  ...
-    lib/        format.ts  http.ts  storage.ts  kvCache.ts (bounded, expiring IndexedDB blob)
-    styles/     tokens.css  global.css
-  server/       spicy.mjs (key-holding lyrics bridge)  spotify.mjs (Spotify search, Client Credentials)
-                index.mjs (production server: dist/ + /api/spicy)
-  tests/        unit  integration  e2e
+  shared/
+    ui/                     @auralis/ui: the React app core, consumed as source through the @auralis/ui alias
+      src/
+        App.tsx  bootstrap.tsx          App routes + startApp(): the only thing a platform entry calls
+        app/      Shell.tsx  platform.ts  theme.ts  artworkTheme.ts  ErrorBoundary.tsx  shortcuts.ts
+        api/
+          subsonic/ client.ts  auth.ts  endpoints.ts  types.ts  errors.ts
+          lyrics/   types.ts  registry.ts  providers/{server.ts,lrclib.ts,spicy.ts}
+                    match.ts  lrc.ts  cache.ts  spotifyMatch.ts (scoring)  resolve.ts (Spotify id service)
+        audio/      engine.ts  queue.ts  mediaSession.ts
+        state/      auth.ts  playback.ts  settings.ts
+        features/   library/  search/  player/  nowplaying/  lyrics/  settings/  connect/  social/  effects/
+        ui/         Button.tsx  List.tsx  Slider.tsx  ...
+        lib/        format.ts  http.ts  storage.ts  kvCache.ts (bounded, expiring IndexedDB blob)
+        styles/     tokens.css  global.css
+      tests/        unit  integration            testing/  mock-server.mjs  e2e-helpers.ts
+    apple/          AuralisKit (Swift package)  AuralisUI (SwiftUI shared by macOS + iOS)
+  web/              index.html  src/main.tsx  vite.config.ts  playwright.config.ts  e2e/
+  tauri/            Cargo.toml  src/ (Rust)  tauri.conf.json  icons/  vite.config.ts  frontend/{index.html,main.tsx}
+  android/          Cargo.toml  src/ (Rust)  tauri.conf.json  gen/android (Gradle)  vite.config.ts
+                    frontend/{index.html,main.tsx,mobile.css,mobile/}  tests/  e2e/
+  macos/ , ios/     project.yml (XcodeGen)  Sources/
+  server/           spicy.mjs (key-holding lyrics bridge)  spotify.mjs (Spotify search, Client Credentials)
+                    index.mjs (production server: web/dist + /api/spicy)  vite-plugin.mjs (dev bridge)  tests/
 ```
+
+Layering inside `shared/ui` is unchanged (below). What is new is where the platforms sit: see `docs/STRUCTURE.md`.
 
 ## 4. Data flow
 
@@ -85,7 +94,8 @@ Auralis/
 `removeFromPlaylist`). None of them introduces a store: favourites read the single `getStarred2` query the Favorites
 page already owns (`features/library/starred.ts`), flip it optimistically and reconcile by invalidating it, so no two
 views can disagree. Play reporting lives in `state/playback.ts` next to the engine subscription, is fire-and-forget,
-and is gated by a settings flag; it can never delay or fail playback.
+and is gated by settings flags (`reportPlays` for the play count, `shareListening` for the visible "now playing" ping);
+it can never delay or fail playback.
 
 ### Playback (M3)
 1. A user action (play album/track/playlist) sends a track list + start index to `audio/queue`.
@@ -94,6 +104,49 @@ and is gated by a settings flag; it can never delay or fail playback.
 4. UI reads the store; controls call engine methods. **The engine never waits on UI.**
 5. `mediaSession` publishes OS-level metadata/controls (best effort).
 6. State (queue, index, position, volume, repeat/shuffle) persists on change for restore.
+
+### Audio effects (Now Playing → Audio Effects)
+- **State:** `useSettings.effects` (bypass, speed, pitch, reverb, reverbMix, room) next to the existing `eqEnabled`/`eqGains`;
+  global, persisted with the other settings, validated and clamped by `normalizeEffects` on every write and on restore.
+- **One direction:** `resolveFx` (`audio/effects.ts`, pure) turns settings into what the engine applies; bypass resolves to
+  neutral, so the settings survive it. `state/playback.ts` passes the result to `engine.setEffects` on every change.
+- **Speed** is the media element's own `playbackRate` with `preservesPitch` (set via `defaultPlaybackRate` on both
+  elements, so it survives track changes and crossfades). No Web Audio, so it works on servers without CORS.
+- **Everything else** runs on the Web Audio graph in `audio/dsp.ts`: element → EQ → vocal remover → pitch → reverb → trim
+  → output. Built the first time an effect needs it, inside the user's gesture (WebKit only starts a context then), with
+  one CORS reload of the stream; never rebuilt, and nodes are reused on every later change.
+- **Pitch:** a peak-locked phase vocoder (`audio/pitchShifter.ts`) in an AudioWorklet (`audio/pitchWorklet.ts`, shipped as
+  its own same-origin file, which Tauri's `script-src 'self'` allows). Duration is unchanged, so pitch is independent of
+  speed; ~43 ms latency. At 0 the dry path is used and the worklet idles. It is never emulated with `playbackRate`.
+- **Reverb:** one ConvolverNode per space (Room, Hall, Plate), made on first use and fed by a send gain, so unused or
+  off reverbs get silence; impulse responses are synthesised and seeded (`audio/reverb.ts`); equal-power wet/dry.
+- **Loudness:** the output trim takes back the largest EQ boost; impulse responses have unit energy.
+- **Failure:** no Web Audio, or a server that refuses CORS → one fallback reload, then `effectsUnavailable` (sticky until
+  the account changes, so no reload loop). No AudioWorklet (plain HTTP, old browsers) → `pitchUnavailable`. The panel
+  says so and disables only those controls; speed keeps working; playback never waits for any of it.
+
+### Social (sidebar / phone header → Social)
+- **What the server really offers** (checked against Navidrome's `server/subsonic/api.go` and `core/scrobbler`):
+  `getNowPlaying` lists every user's current track (sessions expire at the end of the track; no per-user privacy on the
+  server side), and the Subsonic chat room (`getChatMessages`/`addChatMessage`) exists on some servers (Airsonic) but
+  Navidrome answers **410 Gone**. No Subsonic server has friends, friend requests, presence or direct messages, and
+  `getUsers` returns only the caller. Nothing beyond that is invented: no extra backend, no third-party service.
+- **Data:** `api/subsonic/endpoints.ts` maps and validates the three endpoints. Activity is a TanStack query
+  (`features/social/data.ts`, refetched every 30 s while a Social view is mounted and the window is visible). The chat
+  lives in `state/social.ts`: messages (capped), status (`unknown → ready | unsupported | error`), and the last-read time
+  per account in IndexedDB. It resets when the account changes. "Unsupported" (HTTP 404/405/410/501, code 70, non-Subsonic
+  page) is sticky for the session, so a Navidrome server costs one request per session.
+- **Polling:** both shells poll the chat every 60 s while visible (for the unread badge), an open conversation every
+  10 s. Requests are fire-and-forget and never touch playback state; nothing in Social imports the engine.
+- **Unread** = other people's messages newer than the last-read time; on an account's first load the existing backlog
+  counts as read. Sending waits for the server, then refetches: nothing is shown as sent until the server has it.
+- **Privacy:** the "now playing" ping (`scrobble submission=false`) is what puts you in everyone's `getNowPlaying`, so it
+  now has its own opt-in, `shareListening` (default **off**), separate from `reportPlays` (play counts only). Chat text
+  travels in the query string like every Subsonic parameter (the API has no POST for it): it can appear in server logs.
+- **UI:** one implementation for both apps (`features/social/Social.tsx`): Activity, Chat (conversation list + thread;
+  one server room today, ids leave room for direct/group conversations), People (search) and Profiles. The web app
+  routes it under `/social` with pill tabs; the phone UI wraps the same sections in its own headers and chips
+  (`mobile/pages.tsx`). Avatars are initials: other users' avatars aren't available to ordinary accounts.
 
 ### Lyrics (M4, extended for Spicy Lyrics)
 0. On track change, `useLyrics` first settles the track's **Spotify identity** (only with *External lookups* on): a
@@ -133,7 +186,7 @@ and is gated by a settings flag; it can never delay or fail playback.
 | Decision | Alternative rejected | Reason |
 |----------|---------------------|--------|
 | Subsonic REST API | Navidrome native API | Compatibility across servers; native API is extra surface for MVP. |
-| `HTMLAudioElement` | Web Audio graph / MSE | Native streaming + range; no gapless requirement in MVP; far less code. |
+| `HTMLAudioElement` | Web Audio graph / MSE | Native streaming + range; no gapless requirement in MVP; far less code. Effects add a lazily built Web Audio graph behind it; playback never depends on it. |
 | TanStack Query for async cache | Hand-rolled cache | Dedup, abort, staleness, retries are exactly the lyrics requirements. |
 | Zustand | Redux / Context-only | Playback state updates frequently; Context would re-render the tree. |
 | Server lyrics first | LRCLIB first | Respects the user's own server; avoids needless external calls. |
@@ -167,8 +220,8 @@ and is gated by a settings flag; it can never delay or fail playback.
   built server-side), same-site only, per-client rate limit, in-memory caches, no client headers forwarded, secrets and
   the Spotify access token never logged or returned. Without a key or backend the integration is
   inert and the rest of the app is unaffected. The keys are read from `process.env`/`.env` on the Node side only (no
-  `VITE_` prefix, not in `define`), and `tests/integration/no-secret-in-bundle.test.ts`, `e2e/spicy.spec.ts` and
-  `e2e/lyrics-auto.spec.ts` check they cannot reach the bundle or responses.
+  `VITE_` prefix, not in `define`), and `server/tests/no-secret-in-bundle.test.ts`, `web/e2e/spicy.spec.ts` and
+  `web/e2e/lyrics-auto.spec.ts` check they cannot reach the bundle or responses.
 - **No retry loops:** the HTTP client never retries; TanStack Query is configured with `retry: false`. The one exception
   is server-side: a Spotify search answered `401` is retried once with a fresh token. Failures surface
   with a manual "Try again" (or "Sign in again" for rejected credentials).

@@ -11,6 +11,13 @@ Apple-inspired Liquid Glass interface and word-by-word synced lyrics.
   and play reporting back to your server.
 - **Your server stays the source of truth** — favourites and playlists are stored on the server and show up in your
   other Subsonic clients.
+- **Audio effects** — on Now Playing: playback speed (pitch kept), pitch (tempo kept), reverb and a 10-band equalizer,
+  with a bypass that keeps your settings. Pitch, reverb and the equalizer need CORS on the server's audio (like karaoke);
+  pitch also needs HTTPS or localhost. Speed works everywhere.
+- **Social** — top-left in the app: who on your server is playing what (with one-tap play), the server's chat room where
+  the server has one, and people/profiles built only from that data. Sharing your own listening is **off** until you
+  turn it on. Navidrome has no chat and no Subsonic server has friends or direct messages, so Auralis says so instead
+  of faking them.
 - **Lyrics** — server lyrics first, [LRCLIB](https://lrclib.net) as fallback, and optional syllable-level lyrics from
   Spicy Lyrics (the active syllable lifts and glows as it is sung).
 
@@ -28,10 +35,16 @@ Word-by-word lyrics from Spicy Lyrics: the syllable being sung lifts and glows.
 
 | Platform | Technology | Where |
 |---|---|---|
-| Browser | React + Vite | `src/` |
-| Linux, Windows, Android | Tauri 2 shell around the web app | `src-tauri/` |
-| iOS 26+, macOS 26+ | Native SwiftUI | `apple/` |
+| Browser | React + Vite | `web/` |
+| Linux, Windows | Tauri 2 desktop shell | `tauri/` |
+| Android | Tauri 2 mobile shell with its own phone UI | `android/` |
+| macOS 26+ | Native SwiftUI | `macos/` |
+| iOS 26+ | Native SwiftUI | `ios/` |
+| Shared code | Web app core (`shared/ui`), Apple Swift package and SwiftUI (`shared/apple`) | `shared/` |
 | Lyrics backend | Node, no dependencies, Docker image | `server/`, `Dockerfile` |
+
+Each platform folder builds on its own; what they share, and the rules that keep them apart, are in
+[`docs/STRUCTURE.md`](docs/STRUCTURE.md).
 
 Tagged releases (`v*`) build a portable Windows exe and a signed Android APK in CI. What is verified on each platform is
 tracked honestly in [`docs/PLATFORMS.md`](docs/PLATFORMS.md).
@@ -44,6 +57,7 @@ tracked honestly in [`docs/PLATFORMS.md`](docs/PLATFORMS.md).
 | [`ARCHITECTURE.md`](ARCHITECTURE.md), [`DESIGN.md`](DESIGN.md) | How the app is built and styled |
 | [`API.md`](API.md) | Subsonic usage and the lyrics backend API |
 | [`TESTING.md`](TESTING.md) | Test strategy and the browser-test setup |
+| [`docs/STRUCTURE.md`](docs/STRUCTURE.md) | Repository layout, what is shared, dependency rules, how to build each platform |
 | [`docs/`](docs) | Apple, desktop, backend and platform status |
 
 ## Run it
@@ -53,9 +67,9 @@ Requires Node 20.12+ (developed on Node 24). Docker is optional and only runs th
 ```sh
 npm install
 cp .env.example .env     # optional: only needed for Spicy Lyrics (see below); .env is git-ignored
-npm run dev              # http://localhost:5173 (also serves /api/spicy/*)
-npm run build            # production bundle in dist/
-npm start                # production server: dist/ + /api/spicy/* on http://127.0.0.1:8787
+npm run dev              # web app on http://localhost:5173 (also serves /api/spicy/*)
+npm run build            # production web bundle in web/dist/
+npm start                # production server: web/dist/ + /api/spicy/* on http://127.0.0.1:8787
 ```
 
 Connect with your server address, username and password. Requirements on the server side:
@@ -124,11 +138,11 @@ Security properties: the key exists only in the backend process (never in the bu
 ## Checks
 
 ```sh
-npm test            # unit + component + integration (Vitest, jsdom, MSW)
-npm run typecheck
-npm run lint
-npm run build
-npm run test:e2e    # real-browser tests (Playwright) against a built app and a mock server
+npm test            # every workspace: shared/ui (Vitest, jsdom, MSW), server, android phone UI
+npm run typecheck   # every workspace
+npm run lint        # ESLint + the dependency-boundary check (docs/STRUCTURE.md)
+npm run build       # the web bundle (build:tauri / build:android build the other platforms)
+npm run test:e2e    # real-browser tests (Playwright): web, and the android phone UI, against a built app and a mock server
 ```
 
 See `TESTING.md` §9 for the browser-test setup (including using a system Chromium) and what each suite covers.
@@ -148,6 +162,10 @@ Automated tests never touch a real server. Before relying on a build, walk throu
 8. Play a track past halfway, then check Navidrome's play count / *recently played* for it, and that the **Recent** page starts filling up. Turn off Settings → Playback → *Report plays to your server* and confirm nothing more is recorded.
 9. In Settings: switch themes (including *Album Artwork*), try *Disconnect*, and confirm stored credentials are gone (DevTools → Application → IndexedDB → `auralis`).
 10. Stop the server (or block it) while playing and while browsing: you should see a clear message with a retry, not a blank page.
+11. Audio effects (listen; the automated test only measures a test tone): on Now Playing open *Audio effects*. Speed 1.5×
+    should sound faster at the same pitch; pitch +5 should sound higher at the same tempo; Hall reverb at 50 % should
+    add a tail you hear after pausing; *Effects* off must sound exactly like the original without the track restarting,
+    and on again must bring every setting back. If your server lacks CORS, the panel must say so and only speed works.
 
 ## Security notes
 
@@ -157,4 +175,4 @@ Automated tests never touch a real server. Before relying on a build, walk throu
 
 ## Other platforms
 
-Web is the reference implementation. Native Apple apps (`apple/`), Tauri desktop shell (`src-tauri/`) and the lyrics backend container are described, with honest verification status and a feature matrix, in [`docs/PLATFORMS.md`](docs/PLATFORMS.md), [`docs/APPLE.md`](docs/APPLE.md), [`docs/DESKTOP.md`](docs/DESKTOP.md) and [`docs/BACKEND.md`](docs/BACKEND.md).
+Web is the reference implementation. Native Apple apps (`macos/`, `ios/`), the Tauri desktop shell (`tauri/`), the Android app (`android/`) and the lyrics backend container are described, with honest verification status and a feature matrix, in [`docs/PLATFORMS.md`](docs/PLATFORMS.md), [`docs/APPLE.md`](docs/APPLE.md), [`docs/DESKTOP.md`](docs/DESKTOP.md) and [`docs/BACKEND.md`](docs/BACKEND.md).

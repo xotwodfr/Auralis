@@ -46,13 +46,14 @@ All are Navidrome-compatible Subsonic v1.16.1 operations (Navidrome compat doc +
 | By genre | `getSongsByGenre` | `genre`, `count?`, `offset?` | Optional browse. |
 | Playlists | `getPlaylists` | — | List of playlists. |
 | Playlist | `getPlaylist` | `id` | Ordered songs. |
-| Now playing | `getNowPlaying` | — | Server-side now playing (read-only info). |
+| Now playing | `getNowPlaying` | — | Every user's current track (Navidrome: all users, filtered by library access; entries expire at track end). Social → Activity. **Used.** |
+| Chat | `getChatMessages` / `addChatMessage` | `since?` / `message` | Server-wide room. **Navidrome answers 410**; Airsonic and some others implement it. Social → Chat, with an unavailable state. **Used.** |
 | Search | `search3` | `query`, `artistCount?`, `artistOffset?`, `albumCount?`, `albumOffset?`, `songCount?`, `songOffset?` | OpenSubsonic uses `search3`; `search2` legacy, `search` returns 410. |
 | Lyrics (by id) | `getLyricsBySongId` | `id`, `enhanced?` | Requires `songLyrics` extension. See §3. |
 | Lyrics (legacy) | `getLyrics` | `artist?`, `title?` | Fallback. Returns plain `lyrics` only. |
 | Stream | `stream` | `id`, `maxBitRate?`, `format?` | Binary audio; URL not JSON. |
 | Cover art | `getCoverArt` | `id`, `size?` | Binary image; `size` is px. |
-| Scrobble | `scrobble` | `id`, `submission` | "Now playing" on start, submission at half the track or 4 min. **Used.** |
+| Scrobble | `scrobble` | `id`, `submission` | `submission=false` ("now playing", visible to everyone on the server) only with *Share what I'm playing* on; `submission=true` at half the track or 4 min with *Report plays*. **Used.** |
 | Star / unstar | `star`, `unstar` | `id`/`albumId`/`artistId` | Favorites. **Used.** |
 | Create playlist | `createPlaylist` | `name`, `songId` (repeatable) | "Add to playlist → New playlist". **Used.** |
 | Update playlist | `updatePlaylist` | `playlistId`, `songIdToAdd` / `songIndexToRemove` (repeatable) | Add a track; remove by position. **Used.** |
@@ -62,7 +63,8 @@ All are Navidrome-compatible Subsonic v1.16.1 operations (Navidrome compat doc +
 | User | `getUser` | `username?` | Returns authenticated user; roles reflect server capabilities. |
 
 Explicitly **not implemented by Navidrome** (returns 501/410): podcasts, `search` (legacy),
-videos/captions, chat, and user create/update/delete. Do not call them.
+videos/captions, chat, and user create/update/delete. Chat is the one Auralis calls anyway (it works on other servers):
+the 410 is read as "this server has no chat", once per session.
 
 ### ID handling
 Navidrome IDs are **opaque strings** (MD5/UUID). Never cast to number; never parse structure.
@@ -217,7 +219,7 @@ explicit, isrc}`. Answers are cached in memory for 24 h (empty for 1 h) and conc
 upstream call; after a 429 it stops calling Spotify until `Retry-After` has passed. `/api/spicy/health` reports
 `{ enabled, matching }`; `matching` is true only when both the Spicy key and the Spotify credentials are set.
 
-**Scoring (`src/api/lyrics/spotifyMatch.ts`), every point explained by a signal.**
+**Scoring (`shared/ui/src/api/lyrics/spotifyMatch.ts`), every point explained by a signal.**
 - Normalization: NFKD with Latin diacritics removed, case-fold, apostrophes dropped, `&`/`+` → `and`, punctuation to
   spaces. Featuring credits are removed from titles and artists. Bracketed or dash-suffixed qualifiers are split off
   the title; those naming a version are tokens, the rest stay part of the title ("(I Can't Get No) Satisfaction").
@@ -235,7 +237,7 @@ upstream call; after a 429 it stops calling Spotify until `Retry-After` has pass
   question. Otherwise, if anything scores ≥ 0.5 (or the artist is unknown), the distinct plausible recordings (≤5) are
   offered to the user; else "no match". Without a duration or an artist nothing is accepted without the ISRC.
 
-**Client (`src/api/lyrics/resolve.ts`).** Runs only on track change when *External lookups* is on, the user has no
+**Client (`shared/ui/src/api/lyrics/resolve.ts`).** Runs only on track change when *External lookups* is on, the user has no
 link of their own for the track, and the backend reports `matching`. Waits 300 ms first (rapid skipping never reaches
 the network), 6 s timeout, cancelled when the track changes (a shared lookup is cancelled only when no caller wants
 it), concurrent calls deduplicated. Results persist in IndexedDB keyed by server + user + track id + title/artist/

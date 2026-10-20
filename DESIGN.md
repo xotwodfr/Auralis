@@ -9,7 +9,7 @@ glass only where layers truly overlap; one accent color; motion only where it ex
 
 ## 1. Design tokens
 
-Canonical values live in `src/styles/tokens.css` (copied from the skill, unchanged). Summary:
+Canonical values live in `shared/ui/src/styles/tokens.css` (copied from the skill, unchanged). Summary:
 
 **Neutrals** — `--bg #f5f5f7`, `--surface #ffffff`, `--hover #fbfbfd`, `--text #1d1d1f`,
 `--text-2 #6e6e73`, `--text-3 #86868b`, `--faint #d2d2d7`, `--hairline rgba(0,0,0,.07)`.
@@ -41,7 +41,7 @@ Choice (persisted in `localStorage`, applied before first paint by `index.html`)
 (light), and **Album Artwork** (dynamic, dark). Presets are `[data-theme='…']` blocks in `tokens.css` that override only
 what differs from their light/dark base, so the Settings swatches are painted by the real tokens. Every preset must keep
 AA contrast (text/secondary/tertiary on bg, surface and hover; accent as text; white on `--accent-fill`); this is
-enforced by `tests/unit/themes.test.ts`, which parses `tokens.css`.
+enforced by `shared/ui/tests/unit/themes.test.ts`, which parses `tokens.css`.
 
 Album Artwork derives a palette from the playing track's cover (`lib/palette.ts`): only the **dominant hue** and a
 bounded saturation (0.40–0.72) are borrowed; lightness is fixed by us, so bright, dark and washed-out covers all give the
@@ -88,13 +88,19 @@ right-side or overlay lyrics panel on Now Playing.
 
 - **Sidebar:** solid surface, hairline right border, no glass. Three rows: brand + collapse toggle, a scrolling
   destination list, and a pinned account/Settings footer behind a full-bleed hairline, so Settings stays reachable on
-  short viewports. Destinations are grouped — **Now Playing**, then **Library** (Artists, Albums, Recently Added), then
+  short viewports. Destinations are grouped — **Social** (first, so it holds the top-left corner, with an unread count
+  badge) and **Now Playing**, then **Library** (Artists, Albums, Recently Added), then
   **Yours** (Playlists, Favorites, Recent) — with 11px uppercase group headings. Each item is a 42px icon + label pill;
   the active one takes a tinted pill, 600 weight, an accent icon and a 3px accent bar on its leading edge. Hover and
   active tints are `color-mix(in oklab, var(--text) …)` so every preset gets the same contrast step without new tokens;
   the account sub-line uses `--nav-sub` (82%), which is what keeps it AA *on the active pill*, the tightest case.
   **Collapsed rail** (72px, persisted in `localStorage`): icons only, names carried by `title`/`aria-label`.
   Widths come from one `--sidebar-w` token that the fixed player bar also reads.
+- **Social:** solid panels with hairline rows (content, not navigation); pill tabs (Activity · Chat · People) in the
+  segmented-control style, inactive labels in `--text` because the track on the page ground is too dark for `--text-2`
+  to reach AA. "Listening now" carries a `--live` dot *and* the words. Avatars are neutral initial circles (the server
+  doesn't give other users' pictures); own chat bubbles take `--accent-fill` with white text. In the phone UI the same
+  sections sit under a back-button header and green chips, and the Social button is the top-left control of every tab.
 - **Narrow screens (≤720px):** the sidebar becomes a horizontally scrolling strip of icon-above-label tabs above the
   content, with Settings pinned at its right behind a hairline; the active tab is underlined instead of edge-barred.
 - **Toolbar:** a Back button on detail routes, then the search field.
@@ -125,7 +131,7 @@ here (content), how do I get out (back + sidebar). No dead ends.
 States required on every data screen: **loading** (skeleton, not a spinner alone), **empty**
 (a direction, not a mood), **error** (what failed + retry). See copy rules in the skill.
 
-## 5. Component inventory (`src/ui`)
+## 5. Component inventory (`shared/ui/src/ui`)
 
 Primitive-first; screens compose these.
 
@@ -155,7 +161,7 @@ Icons: line style on one 24-grid stroke, `currentColor`, grayscale; accent only 
 
 ### Lyrics stage (Now Playing)
 - **Hierarchy:** active line at full `--text`; inactive lines at `--lyric-dim` opacity (0.5 on light grounds, 0.4 on dark;
-  ≥ 3:1 for the large bold text in every theme, asserted by `tests/unit/themes.test.ts`). Within the active line,
+  ≥ 3:1 for the large bold text in every theme, asserted by `shared/ui/tests/unit/themes.test.ts`). Within the active line,
   not-yet-sung words sit at `--lyric-unsung` (64 % / 60 %) — brighter than inactive lines, so the active line reads as
   active before its first word — and sweep to full colour syllable by syllable.
 - **Type:** 700 weight, `clamp(1.5rem, 1rem + 1.5vw, 2.375rem)`, line-height 1.22, −0.022em; wraps with

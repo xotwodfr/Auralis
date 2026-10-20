@@ -4,7 +4,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', '.e2e-dist', 'coverage', 'playwright-report', 'test-results', 'src-tauri/target', 'src-tauri/gen', 'apple/AuralisKit/.build'] },
+  { ignores: ['**/dist', '**/.e2e-dist', '**/coverage', '**/playwright-report', '**/test-results', '**/target', '**/gen', 'shared/apple/AuralisKit/.build'] },
   js.configs.recommended,
   tseslint.configs.recommended,
   reactHooks.configs.flat.recommended,
@@ -13,7 +13,7 @@ export default tseslint.config(
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['*.config.{js,ts}', 'e2e/**/*.mjs', 'server/**/*.mjs'],
+    files: ['**/*.config.{js,ts}', '**/e2e/**/*.{mjs,ts}', 'shared/ui/testing/*.{mjs,ts}', 'shared/ui/vite.base.ts', 'server/**/*.{mjs,ts}', 'scripts/*.mjs'],
     languageOptions: { globals: globals.node },
-  },
+  }
 )

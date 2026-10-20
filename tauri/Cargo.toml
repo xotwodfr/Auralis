@@ -1,0 +1,18 @@
+[package]
+name = "auralis-desktop"
+version = "0.2.7"
+edition = "2021"
+description = "Auralis desktop shell (Windows, Linux): the web app in a native webview"
+
+[lib]
+name = "auralis_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
