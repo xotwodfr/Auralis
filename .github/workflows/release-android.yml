@@ -36,8 +36,8 @@ jobs:
         run: |
           export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           npx tauri android build --apk --target aarch64 --ci
-      # An unsigned APK cannot be installed. With ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD secrets set, every release
-      # shares one signature and updates install over older builds; without them a throwaway key is used (uninstall first).
+      # An unsigned APK cannot be installed. Every release must share one signature so updates install over older builds, so
+      # the job fails without the ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD secrets instead of publishing a throwaway key.
       - name: Sign
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
@@ -46,15 +46,12 @@ jobs:
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
           UNSIGNED="$(find android/gen/android -name '*-unsigned.apk' | head -1)"
           [ -n "$UNSIGNED" ] || { echo "no unsigned apk found"; exit 1; }
-          export PASS="auralis-ci"
-          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > ks.jks
-            export PASS="$KEYSTORE_PASSWORD"
-          else
-            echo "::warning::No signing keystore secret; using a throwaway key"
-            keytool -genkeypair -keystore ks.jks -alias auralis -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "$PASS" -keypass "$PASS" -dname "CN=Auralis"
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD are not set; refusing to sign a release with a throwaway key"
+            exit 1
           fi
+          echo "$KEYSTORE_B64" | base64 -d > ks.jks
+          export PASS="$KEYSTORE_PASSWORD"
           mkdir out
           OUT="out/Auralis-${TAG#v}-android-arm64.apk"
           "$BT/zipalign" -f -p 4 "$UNSIGNED" aligned.apk
