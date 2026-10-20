@@ -87,6 +87,34 @@ Run everything from the repo root after `npm install`.
 
 Android needs JDK 17, the Android SDK/NDK and `NDK_HOME`; on NixOS `nix-shell android-shell.nix` provides them.
 
+### Arch Linux (no Nix)
+
+```sh
+sudo pacman -S --needed jdk17-openjdk webkit2gtk-4.1 libappindicator-gtk3 base-devel unzip
+yay -S android-sdk-cmdline-tools-latest          # AUR; installs sdkmanager under /opt/android-sdk (root-owned)
+rustup target add aarch64-linux-android
+
+# Use a user-owned SDK root so sdkmanager needs no sudo. Versions match android-shell.nix.
+export ANDROID_HOME=$HOME/Android/Sdk ANDROID_SDK_ROOT=$HOME/Android/Sdk
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018
+SM=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
+yes | $SM --sdk_root=$ANDROID_HOME --licenses
+$SM --sdk_root=$ANDROID_HOME "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "platform-tools"
+```
+
+`npm run build:tauri` then produces a `.deb` and an AppImage in `tauri/target/release/bundle/`. The desktop build prints
+three `AURALIS_*` warnings outside nix-shell; they only mean it uses the system's GIO/GStreamer libraries.
+`npm run build:android` produces an **unsigned** APK, which Android will not install. Sign a copy with `zipalign` and
+`apksigner` from `build-tools` (CI does this with the release keystore secrets). A locally signed APK has a different
+certificate from the released ones, so uninstall the released app first; never reuse or commit the release keystore.
+
+### Running the tests
+
+`shared/ui` caps Vitest at 2 workers (`shared/ui/vitest.config.ts`). Its DSP and jsdom suites are CPU-heavy, and one worker
+per core pushed them past the 5 s default timeout on an 8-core machine: the failing set changed from run to run, each file
+passed alone, and 611/611 passed on every run once the cap was in. It is a load limit, not a retry or a raised timeout, so
+a test that genuinely fails still fails. Do not hide a failure that reproduces at 2 workers by raising `testTimeout`.
+
 ### How Tauri finds things (why the layout is what it is)
 
 The Tauri CLI looks for `tauri.conf.json` from the directory it is run in and puts the Android Gradle project at
