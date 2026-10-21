@@ -15,6 +15,7 @@ import { KaraokeButton, KaraokeIntensity } from '@auralis/ui/ui/KaraokeButton'
 import { Slider } from '@auralis/ui/ui/Slider'
 import { TransportControls } from '@auralis/ui/ui/TransportControls'
 import { useDismiss } from './parts'
+import { playerMorphs } from './transitions'
 
 /** `remaining`: show the time left as -m:ss on the right, like Apple Music. */
 function Seek({ remaining = false }: { remaining?: boolean }) {
@@ -70,7 +71,11 @@ export default function Player() {
   // The mini-player's lyrics button opens straight into the fullscreen lyrics.
   const [lyricsOpen, setLyricsOpen] = useState((useLocation().state as { lyrics?: boolean } | null)?.lyrics === true)
   const landscape = useLandscape()
-  const [closing, close] = useDismiss(() => (history.length > 1 ? navigate(-1) : navigate('/home', { replace: true })))
+  const leave = () => (history.length > 1 ? navigate(-1) : navigate('/home', { replace: true }))
+  // With view transitions the container transform is the exit; without, the sheet sinks first.
+  const [sinking, sink] = useDismiss(leave)
+  const closing = !playerMorphs() && sinking
+  const close = playerMorphs() ? leave : sink
   const [lyricsClosing, closeLyrics] = useDismiss(() => setLyricsOpen(false))
 
   useEffect(() => {

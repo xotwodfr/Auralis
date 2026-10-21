@@ -10,6 +10,7 @@ import { formatDuration } from '@auralis/ui/lib/format'
 import { useAuth } from '@auralis/ui/state/auth'
 import { Icon } from '@auralis/ui/ui/Icon'
 import { EmptyState } from '@auralis/ui/ui/State'
+import { markArt } from './transitions'
 import { ActionBar, AutoLoad, BackButton, Hero, LikedArt, MediaRow, Shelf, SongRows, Tile } from './parts'
 
 const href = (kind: string, id: string) => `/library/${kind}/${encodeURIComponent(id)}`
@@ -83,7 +84,7 @@ export function Home() {
             </li>
             {quick.slice(0, 5).map((a) => (
               <li key={a.id}>
-                <Link to={href('albums', a.id)} className="m-quick__item">
+                <Link to={href('albums', a.id)} className="m-quick__item" onClick={(e) => markArt(e.target)}>
                   <span className="m-quick__art">
                     <Cover id={a.coverArt} size={128} />
                   </span>

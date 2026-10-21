@@ -11,6 +11,7 @@ import { useSettings } from '@auralis/ui/state/settings'
 import { usePlayback } from '@auralis/ui/state/playback'
 import { Icon } from '@auralis/ui/ui/Icon'
 import { DEFAULT_SEED, applyScheme, seedFromHue } from './scheme'
+import { markArt } from './transitions'
 
 /** Material You: the whole scheme follows the playing cover's hue when Dynamic colour is on, else the app's own seed. */
 export function useDynamicColor() {
@@ -95,17 +96,17 @@ export function ActionBar({ star, name, load, disabled = false }: { star?: StarT
   }
   return (
     <div className="m-actions">
-      {star && <StarButton target={star} name={name} starred={isStarred(ids, star.kind, star.item.id)} />}
-      <button type="button" className="icon-btn" aria-label={`Add ${name} to queue`} disabled={disabled} onClick={run(addToQueue)}>
-        <Icon name="playlist-add" size={24} />
+      <button type="button" className="m-play" aria-label={`Play ${name}`} disabled={disabled} onClick={run((s) => playTracks(s))}>
+        <Icon name="play" size={24} />
+        <span>Play</span>
       </button>
-      <span className="m-actions__gap" />
-      <button type="button" className="icon-btn" aria-label={`Shuffle ${name}`} disabled={disabled} onClick={run(shufflePlay)}>
+      <button type="button" className="icon-btn m-tonal" aria-label={`Shuffle ${name}`} disabled={disabled} onClick={run(shufflePlay)}>
         <Icon name="shuffle" size={24} />
       </button>
-      <button type="button" className="m-play" aria-label={`Play ${name}`} disabled={disabled} onClick={run((s) => playTracks(s))}>
-        <Icon name="play" size={26} />
+      <button type="button" className="icon-btn m-tonal" aria-label={`Add ${name} to queue`} disabled={disabled} onClick={run(addToQueue)}>
+        <Icon name="playlist-add" size={24} />
       </button>
+      {star && <StarButton target={star} name={name} starred={isStarred(ids, star.kind, star.item.id)} />}
       {failed && <p role="alert" className="m-error">Couldn’t load the tracks.</p>}
     </div>
   )
@@ -155,7 +156,7 @@ export function SongRows({ songs, numbered = false, inPlaylist }: { songs: Song[
 export function MediaRow({ to, cover, title, sub, round = false, art }: { to: string; cover?: string; title: string; sub?: string; round?: boolean; art?: ReactNode }) {
   return (
     <li>
-      <Link to={to} className="m-row">
+      <Link to={to} className="m-row" onClick={(e) => markArt(e.target)}>
         <span className={round ? 'm-thumb m-thumb--lg m-thumb--round' : 'm-thumb m-thumb--lg'}>{art ?? <Cover id={cover} size={128} />}</span>
         <span className="m-text">
           <span className="m-text__title">{title}</span>
@@ -179,7 +180,7 @@ export function Shelf({ title, children }: { title: string; children: ReactNode 
 export function Tile({ to, cover, title, sub, round = false }: { to: string; cover?: string; title: string; sub?: string; round?: boolean }) {
   return (
     <li className={round ? 'm-tile m-tile--round' : 'm-tile'}>
-      <Link to={to}>
+      <Link to={to} onClick={(e) => markArt(e.target)}>
         <Cover id={cover} size={300} />
         <span className="m-tile__title">{title}</span>
         {sub && <span className="m-tile__sub">{sub}</span>}

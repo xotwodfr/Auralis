@@ -1,6 +1,7 @@
 # Material Design 3 migration plan
 
 > **Status (2026-10-21):** first pass shipped as an override layer, not the full plan below.
+> Android motion (2026-10-21, third pass): `android/frontend/mobile/transitions.tsx` runs every navigation in a View Transition: top-level tabs fade through, deeper pages share the X axis (forward/back, also for the hardware button), a tapped cover morphs into the next page's hero art, and the mini-player grows into Now Playing as a container transform and back. Scroll position is restored on Back. Hero actions are an M3 button group, shelves are carousels, the queue and chat composer follow M3, and tabs/switches give a haptic tick (`mobile/haptics.ts`, VIBRATE permission). It is still a WebView UI: system Predictive Back animation and native Compose components are not reachable from here.
 > Web/desktop: `shared/ui/src/styles/m3.css` (tonal surfaces derived per theme via `color-mix`, shape scale, state
 > layers, M3 buttons/fields/chips/segmented/slider/dialog/snackbar, navigation drawer, floating player, bottom
 > navigation bar under 720px, fade-through page transitions). Android (2026-10-21, second pass): `android/frontend/mobile.css`

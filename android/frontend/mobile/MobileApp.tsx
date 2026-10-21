@@ -12,6 +12,7 @@ import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPa
 import { Activity, ConversationList, People } from '@auralis/ui/features/social/Social'
 import { CHAT_POLL_BACKGROUND_MS, useChatConnection, useChatPolling } from '@auralis/ui/features/social/data'
 import SettingsPage from './SettingsPage'
+import { ShownLocation, usePlayerPresence, useShownLocation, useTransitionedLocation } from './transitions'
 
 const TABS: { to: string; label: string; icon: IconName; match: (path: string) => boolean }[] = [
   { to: '/home', label: 'Home', icon: 'home', match: (p) => p === '/home' || p.startsWith('/browse') },
@@ -30,11 +31,7 @@ function useLyricSize() {
 function Shell() {
   useChatPolling(CHAT_POLL_BACKGROUND_MS)
   useChatConnection()
-  const { pathname } = useLocation()
-  // Braces matter: newer Chromium returns a Promise from scrollTo, which React would take for a cleanup.
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [pathname])
+  const { pathname } = useShownLocation()
   return (
     <div className="m-app">
       <main className="m-main">
@@ -78,10 +75,11 @@ function SignedIn() {
   useDynamicColor()
   const location = useLocation()
   const playerOpen = location.pathname === '/now-playing'
+  const playerShown = usePlayerPresence(playerOpen)
   const background = (location.state as { background?: Location } | null)?.background
-  const pages = playerOpen ? (background ?? { ...location, pathname: '/home' }) : location
+  const pages = useTransitionedLocation(playerOpen ? (background ?? { ...location, pathname: '/home' }) : location)
   return (
-    <>
+    <ShownLocation value={pages}>
       <Routes location={pages}>
         <Route element={<Shell />}>
           <Route path="/home" element={<Home />} />
@@ -104,7 +102,7 @@ function SignedIn() {
         </Route>
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
-      {playerOpen && <Player />}
-    </>
+      {playerShown && <Player />}
+    </ShownLocation>
   )
 }

@@ -70,7 +70,7 @@
   letter-spacing: 0.01em;
   background: var(--md-sys-color-surface);
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: contain; /* keeps the system's own stretch effect at the ends, without chaining */
   transition: background-color var(--md-long) var(--m-ease), color var(--md-long) var(--m-ease);
 }
 
@@ -352,15 +352,224 @@
   background-color: var(--md-press);
 }
 
-/* ---- Page transitions: fade through (top-level destinations), emphasized decelerate ---- */
-.m-route {
-  animation: m-page-in var(--md-medium) var(--md-decel);
+/* ---- Page transitions ----
+   Navigation runs in a view transition (mobile/transitions.tsx), which sets html[data-motion]: top-level tabs fade through
+   (outgoing fades in 90 ms, incoming scales up from 92%), deeper pages share the X axis (forward: out to the left, in from
+   the right; back: the reverse). The dock is named so it stays put and is drawn live above the moving page. A tapped cover
+   (html[data-art]) morphs into the next page's hero art (container transform). Without view transitions the page just rises in. */
+:root {
+  --m-axis: cubic-bezier(0.3, 0, 0, 1);
+}
+
+@supports not (view-transition-name: none) {
+  .m-route {
+    animation: m-page-in var(--md-medium) var(--md-decel);
+  }
 }
 
 @keyframes m-page-in {
   from {
     opacity: 0;
     transform: translateY(12px);
+  }
+}
+
+[data-platform='mobile'] .m-dock {
+  view-transition-name: m-dock;
+}
+
+html[data-art] .m-hero__art {
+  view-transition-name: m-art;
+}
+
+::view-transition-group(m-dock) {
+  animation: none;
+}
+
+::view-transition-old(m-dock) {
+  display: none;
+}
+
+::view-transition-new(m-dock) {
+  animation: none;
+}
+
+::view-transition-group(m-art),
+::view-transition-group(m-card) {
+  animation-duration: var(--md-long);
+  animation-timing-function: var(--m-axis);
+}
+
+/* Container transform (mini-player <-> Now Playing): the page behind holds still, the card's corners open up to the screen's. */
+html[data-motion='card']::view-transition-old(root),
+html[data-motion='card']::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(m-card) {
+  overflow: clip;
+  animation-name: -ua-view-transition-group-anim-m-card, m-card-corners;
+}
+
+html[data-card='close']::view-transition-group(m-card) {
+  animation-direction: normal, reverse;
+}
+
+::view-transition-group(m-card) {
+  background: var(--md-sys-color-surface-container-low);
+}
+
+/* Fade through inside the container: the old content leaves in the first third, the new arrives over the rest. */
+::view-transition-old(m-card),
+::view-transition-new(m-card) {
+  mix-blend-mode: normal;
+  animation-duration: var(--md-long);
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+::view-transition-old(m-card) {
+  animation-name: m-card-out;
+}
+
+::view-transition-new(m-card) {
+  animation-name: m-card-in;
+}
+
+@keyframes m-card-out {
+  0% {
+    opacity: 1;
+  }
+
+  30%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes m-card-in {
+  0%,
+  20% {
+    opacity: 0;
+  }
+
+  70%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes m-card-corners {
+  from {
+    border-radius: var(--md-shape-lg);
+  }
+
+  to {
+    border-radius: 0;
+  }
+}
+
+/* The sheet's own rise is the fallback for WebViews without view transitions. */
+@supports (view-transition-name: none) {
+  [data-platform='mobile'] .m-player {
+    animation: none;
+  }
+}
+
+::view-transition-old(m-art),
+::view-transition-new(m-art) {
+  mix-blend-mode: normal;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--md-shape-xl);
+  overflow: clip;
+}
+
+html[data-motion]::view-transition-old(root),
+html[data-motion]::view-transition-new(root) {
+  mix-blend-mode: normal;
+  animation-duration: var(--md-medium);
+  animation-timing-function: var(--m-axis);
+  animation-fill-mode: both;
+}
+
+html[data-motion='tab']::view-transition-old(root) {
+  animation-name: m-fade-out;
+  animation-duration: 90ms;
+  animation-timing-function: linear;
+}
+
+html[data-motion='tab']::view-transition-new(root) {
+  animation-name: m-fade-through-in;
+  animation-delay: 90ms;
+}
+
+html[data-motion='forward']::view-transition-old(root) {
+  animation-name: m-fade-out, m-slide-out-start;
+  animation-duration: 90ms, var(--md-medium);
+  animation-timing-function: linear, var(--m-axis);
+}
+
+html[data-motion='forward']::view-transition-new(root) {
+  animation-name: m-fade-in, m-slide-in-end;
+  animation-duration: 210ms, var(--md-medium);
+  animation-delay: 90ms, 0s;
+  animation-timing-function: linear, var(--m-axis);
+}
+
+html[data-motion='back']::view-transition-old(root) {
+  animation-name: m-fade-out, m-slide-out-end;
+  animation-duration: 90ms, var(--md-medium);
+  animation-timing-function: linear, var(--m-axis);
+}
+
+html[data-motion='back']::view-transition-new(root) {
+  animation-name: m-fade-in, m-slide-in-start;
+  animation-duration: 210ms, var(--md-medium);
+  animation-delay: 90ms, 0s;
+  animation-timing-function: linear, var(--m-axis);
+}
+
+@keyframes m-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes m-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes m-fade-through-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes m-slide-out-start {
+  to {
+    transform: translateX(-30px);
+  }
+}
+
+@keyframes m-slide-in-end {
+  from {
+    transform: translateX(30px);
+  }
+}
+
+@keyframes m-slide-out-end {
+  to {
+    transform: translateX(30px);
+  }
+}
+
+@keyframes m-slide-in-start {
+  from {
+    transform: translateX(-30px);
   }
 }
 
@@ -859,7 +1068,13 @@
 .m-hero__art {
   width: min(64vw, 280px);
   margin-bottom: 24px;
-  animation: m-art-in var(--md-long) var(--md-decel);
+}
+
+/* Without view transitions the art scales in itself; with them the container transform does that. */
+@supports not (view-transition-name: none) {
+  .m-hero__art {
+    animation: m-art-in var(--md-long) var(--md-decel);
+  }
 }
 
 .m-hero__art .artwork {
@@ -916,37 +1131,57 @@
   color: var(--md-sys-color-on-surface-variant);
 }
 
+/* Hero actions: a filled Play button that takes the free width, then tonal icon buttons (M3 button group). */
 .m-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  margin: 8px -8px 8px;
+  gap: 8px;
+  margin: 8px 0;
 }
 
-.m-actions__gap {
-  flex: 1;
-}
-
-/* Play: a FAB (primary container, 16 dp corners) that rounds out while pressed. */
 .m-play {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 56px;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 120px;
   height: 56px;
-  margin-left: 4px;
-  padding: 0 0 0 2px;
-  color: var(--md-sys-color-on-primary-container);
-  background: var(--md-sys-color-primary-container);
+  padding: 0 24px;
+  color: var(--md-sys-color-on-primary);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  background: var(--md-sys-color-primary);
   border: 0;
-  border-radius: var(--md-shape-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+  border-radius: var(--md-shape-full);
   cursor: pointer;
+  transition: border-radius var(--md-medium) var(--md-spring);
 }
 
 .m-play:active:not(:disabled) {
-  border-radius: var(--md-shape-xl);
+  border-radius: var(--md-shape-lg); /* M3 Expressive: squares off while pressed */
+}
+
+.m-actions :is(.m-tonal, .star) {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+  border-radius: var(--md-shape-full);
+  transition: border-radius var(--md-medium) var(--md-spring), background-color var(--md-short) var(--m-ease);
+}
+
+.m-actions :is(.m-tonal, .star):active:not(:disabled) {
+  border-radius: var(--md-shape-lg);
+}
+
+.m-actions .star[aria-pressed='true'] {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
 }
 
 .m-songs {
@@ -2301,7 +2536,6 @@
   margin: 0 -16px;
   background: none;
   border: 0;
-  border-top: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 0;
   box-shadow: none;
 }
@@ -2331,24 +2565,54 @@
 }
 
 [data-platform='mobile'] .composer {
-  padding: 8px 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  background: var(--md-sys-color-surface);
+  border: 0;
 }
 
 [data-platform='mobile'] .composer__field {
+  flex: 1;
   min-height: 56px;
-  padding: 0 20px;
+  max-height: 160px;
+  padding: 16px 20px;
   color: var(--md-sys-color-on-surface);
+  font: inherit;
+  line-height: 24px;
   background: var(--md-sys-color-surface-container-high);
   border: 0;
   border-radius: var(--md-shape-xl);
+  resize: none;
+}
+
+[data-platform='mobile'] .composer__field:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary);
+}
+
+[data-platform='mobile'] .composer__field::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 [data-platform='mobile'] .composer__send {
+  flex: none;
   width: 56px;
   height: 56px;
-  color: var(--md-sys-color-on-primary-container);
-  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+  border-radius: var(--md-shape-full);
+  transition: background-color var(--md-short) var(--m-ease), color var(--md-short) var(--m-ease), border-radius var(--md-medium) var(--md-spring);
+}
+
+[data-platform='mobile'] .composer__send:active:not(:disabled) {
   border-radius: var(--md-shape-lg);
+}
+
+[data-platform='mobile'] .composer__send:disabled {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
 }
 
 [data-platform='mobile'] .composer__error {
@@ -2367,6 +2631,109 @@
 }
 
 /* ---- Reduced motion ---- */
+/* ---- Carousel: items at the scroll edges shrink and dim, so the row reads as one M3 carousel ---- */
+[data-platform='mobile'] .m-tile .artwork {
+  border-radius: var(--md-shape-xl);
+}
+
+@supports (animation-timeline: view()) {
+  [data-platform='mobile'] .m-tile {
+    animation: m-carousel linear both;
+    animation-timeline: view(inline);
+  }
+
+  /* Only the cover dims; text keeps its contrast. */
+  [data-platform='mobile'] .m-tile .artwork {
+    animation: m-carousel-art linear both;
+    animation-timeline: view(inline);
+  }
+
+  @keyframes m-carousel {
+    0%,
+    100% {
+      transform: scale(0.86);
+    }
+
+    28%,
+    72% {
+      transform: none;
+    }
+  }
+
+  @keyframes m-carousel-art {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+
+    28%,
+    72% {
+      opacity: 1;
+    }
+  }
+}
+
+/* ---- Native feel: chrome is not selectable (text fields, chat and lyrics are), no long-press callout ---- */
+[data-platform='mobile'] .m-app {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+[data-platform='mobile'] :is(input, textarea, .msg__body, .lyrics-stage, [contenteditable]) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ---- Queue: a top app bar and M3 list items (the playing track takes the secondary container) ---- */
+[data-platform='mobile'] .queue__head {
+  min-height: 64px;
+  padding: 0 4px 0 16px;
+}
+
+[data-platform='mobile'] .queue__title {
+  font-size: 1.375rem; /* title-large */
+  font-weight: 400;
+  line-height: 1.75rem;
+}
+
+[data-platform='mobile'] .queue__count {
+  font-size: 0.875rem;
+}
+
+[data-platform='mobile'] .queue__head .btn {
+  min-height: 40px;
+  padding: 0 12px;
+  border-color: transparent;
+}
+
+[data-platform='mobile'] .vlist__row {
+  border: 0;
+}
+
+[data-platform='mobile'] .qrow--current {
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+  border-radius: var(--md-shape-lg);
+}
+
+[data-platform='mobile'] .qrow--current .row__title {
+  color: inherit;
+}
+
+[data-platform='mobile'] .qrow--current .row__sub {
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+[data-platform='mobile'] .qrow .icon-btn {
+  width: 40px;
+  height: 40px;
+}
+
+[data-platform='mobile'] .qrow__art .artwork {
+  border-radius: var(--md-shape-sm);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .m-player,
   .m-lyricsfull,
