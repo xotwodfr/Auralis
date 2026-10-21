@@ -446,7 +446,8 @@ kbd {
 .navitem {
   min-height: 56px;
   padding: 0 16px;
-  color: var(--text-2);
+  /* --text-body, not --text-2: labels stay AA on the hover layer, including mid-transition. */
+  color: var(--text-body);
   font-weight: 500;
   border-radius: var(--r-pill);
   transition: background-color var(--md-short) var(--md-standard), color var(--md-short) var(--md-standard);

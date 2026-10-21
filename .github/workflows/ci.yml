@@ -51,6 +51,8 @@ jobs:
       - name: Docker smoke (health, persistence across down/up and --force-recreate)
         run: |
           install -d -m 700 secrets && openssl rand -base64 32 > secrets/db_password && chmod 600 secrets/db_password
+          # The image runs as node (uid 1000); the runner user is not, and Compose file secrets keep the host owner.
+          sudo chown 1000 secrets/db_password
           cp .env.example .env
           docker compose build
           ./scripts/smoke.sh
