@@ -14,6 +14,7 @@ your music server: chat accounts are its own, never your Navidrome/Subsonic logi
 ```sh
 cd server/chat
 install -d -m 700 secrets && openssl rand -base64 32 > secrets/db_password && chmod 600 secrets/db_password
+sudo chown 1000 secrets/db_password # the image runs as node (uid 1000); skip if your own uid is 1000
 cp .env.example .env && $EDITOR .env          # CHAT_ALLOWED_ORIGINS, CHAT_BIND_ADDRESS, CHAT_REGISTRATION…
 docker compose build
 docker compose up -d --wait                   # db → migrate (one-shot) → chat, waits until healthy
@@ -35,9 +36,9 @@ project's internal network.
 | `CHAT_BIND_ADDRESS` | `127.0.0.1` | Host address the port is published on. `127.0.0.1` behind Tailscale Serve / a tunnel / Caddy; the LAN IP for direct LAN access. |
 | `CHAT_PORT` | `8790` | Host port. Inside the container the app always listens on `0.0.0.0:8790`. |
 | `CHAT_REGISTRATION` | `closed` | `closed` (CLI/admin only), `invite` (invite code required), `open`. |
-| `CHAT_NAVIDROME_URL` | – | Navidrome/Subsonic URL reachable from the container. When set, any Navidrome user can sign in with their Navidrome username and password; the chat account is created (and its password kept in sync) on sign-in, and joins the Lobby. Accounts with the `admin` role are never changed this way. Works even with `CHAT_REGISTRATION=closed`. |
+| `CHAT_NAVIDROME_URL` | – | Navidrome/Subsonic URL reachable from the container. When set, any Navidrome user can sign in with their Navidrome username and password; the chat account is created on first sign-in (and its password kept in sync, signing out its other sessions), and joins the Lobby. Accounts created locally, admins and disabled accounts are never changed this way. Works with `CHAT_REGISTRATION=closed`, which is recommended here (open sign-up lets someone claim a Navidrome user's name first). The app only signs in automatically when the chat server is HTTPS and this URL's origin matches the user's music server. |
 | `CHAT_ALLOWED_ORIGINS` | – | Exact web origins allowed to call the API and open sockets. `*` is refused. Desktop: `tauri://localhost` (Linux/macOS), `http://tauri.localhost` (Windows; Android assumed, verify). Web dev: `http://localhost:5173`. Native apps send no Origin. |
-| `CHAT_TRUST_PROXY` | `0` | `1` takes the client address from `CF-Connecting-IP` / the last `X-Forwarded-For` hop. Refused unless `CHAT_BIND_ADDRESS` is loopback. |
+| `CHAT_TRUST_PROXY` | `0` | `1` takes the client address from the last `X-Forwarded-For` hop; `cloudflare` from `CF-Connecting-IP` (use only when Cloudflare, e.g. a Cloudflare Tunnel, is the proxy). Refused unless `CHAT_BIND_ADDRESS` is loopback. |
 | `CHAT_LOG_LEVEL` | `info` | pino level. Logs never contain tokens, passwords, invite codes or message text. |
 | `CHAT_SESSION_IDLE_DAYS` / `CHAT_SESSION_MAX_DAYS` | `30` / `180` | Session expiry (idle / absolute). |
 | `CHAT_MAX_MESSAGE_CHARS` | `4000` | At most 4000 (database limit). |
@@ -46,7 +47,7 @@ project's internal network.
 | `CHAT_DELETED_RETENTION_DAYS` | `30` | Deleted messages keep their text this long (for moderation), then an hourly job blanks it. |
 | `CHAT_VERSION` | `local` | Image tag used by `compose.yaml`. |
 
-The server refuses to start on unknown `CHAT_*` keys (typos), non-exact origins, `CHAT_TRUST_PROXY=1` with a
+The server refuses to start on unknown `CHAT_*` keys (typos), non-exact origins, `CHAT_TRUST_PROXY` set with a
 non-loopback bind, or a missing/empty password file. For development without Docker, `DATABASE_URL` replaces the
 `DATABASE_*` settings: `DATABASE_URL=postgres://… npm run migrate && npm start`.
 

@@ -559,12 +559,18 @@ single self-hosted database. Flagged as [Decision] in §14 so it is not silently
 - **Changed 2026-10-21 (replaces the original "independent accounts" rule):** chat accounts **share the Navidrome
   credentials.** The chat server and the music server are run by the same operator, so one login is the point.
   - Server: with `CHAT_NAVIDROME_URL` set, a login that doesn't match a local chat password is checked against Navidrome
-    (`ping.view`, Subsonic token auth, so the password itself is never sent). On success the chat account is created, or
-    its password updated, and it joins the Lobby. This works even with `CHAT_REGISTRATION=closed`. Accounts with the
-    chat `admin` role and disabled accounts are never created or changed this way, so control of Navidrome doesn't
-    give control of the chat admin.
-  - Client: when a chat server is configured and nobody is signed in to chat, the app signs in with the Subsonic
-    username and password (`autoSignIn` in `state/chatServer.ts`). It tries once per address and set of credentials
+    (`ping.view`, Subsonic token auth, so the password itself is never sent). On success a new chat account is created
+    (`users.auth_source = 'navidrome'`) and joins the Lobby, or, for an account an earlier Navidrome sign-in created, its
+    password is replaced and its other sessions are signed out. Accounts created locally, admins and disabled accounts
+    are never created or changed this way, so a Navidrome user who shares a local account's name does not get into it
+    and control of Navidrome doesn't give control of the chat admin. Only plain ASCII usernames qualify, and Navidrome is
+    asked about the exact lowercase name stored in chat (Unicode case folding cannot map one user onto another).
+    This works even with `CHAT_REGISTRATION=closed`, which is the recommended mode here: with open sign-up, someone could
+    register a Navidrome user's name locally first and keep that user out of chat. `server-info` advertises the
+    Navidrome origin as `musicServer`.
+  - Client: when a chat server is configured, nobody is signed in to chat, the chat address is HTTPS and its `server-info`
+    `musicServer` is exactly the origin of the music server the app is signed in to, the app signs in with the Subsonic
+    username and password (`autoSignIn` in `state/chatServer.ts`). Any other chat server never sees that password. It tries once per address and set of credentials
     per app run, so a wrong password, a manual sign-out or a revoked session is not retried in a loop. If the Subsonic
     account changes to a different username, chat signs out and signs in as the new user. The two sessions are still
     stored separately (`auralis` vs `auralis-chat`), and the chat server never stores the Navidrome password in plain text.
@@ -627,9 +633,10 @@ at fan-out time from the database (`current members of conversation X`). Client-
   plus `SameSite=Strict` become mandatory.
 - **Security headers:** `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store` on
   authenticated responses. HSTS is set at the TLS edge for the public domain only.
-- **Client address:** taken from the socket, unless `CHAT_TRUST_PROXY=1`, which is valid only when the port is bound to
-  loopback behind a proxy you control. In that case it uses `CF-Connecting-IP` or the **last** `X-Forwarded-For` hop, exactly
-  as `server/spicy.mjs` does. `config.ts` refuses to start with `CHAT_TRUST_PROXY=1` and a non-loopback bind address.
+- **Client address:** taken from the socket, unless `CHAT_TRUST_PROXY` is set, which is valid only when the port is bound
+  to loopback behind a proxy you control. `1` uses the **last** `X-Forwarded-For` hop (the one your proxy appended);
+  `cloudflare` uses `CF-Connecting-IP` (only trustworthy when Cloudflare is the proxy: anywhere else a caller can send it).
+  `config.ts` refuses to start with either value and a non-loopback bind address.
 
 ### 7.7 Rate limiting and abuse prevention
 | Scope | Limit (defaults, configurable) |

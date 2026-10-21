@@ -104,6 +104,7 @@ export async function buildApp(config: Config, db: Db, options: { logger?: false
       protocol: 1,
       registration: config.registration,
       limits: { maxMessageChars: config.maxMessageChars, maxGroupMembers: config.maxGroupMembers },
+      ...(config.navidromeUrl ? { musicServer: new URL(config.navidromeUrl).origin } : {}),
     }
   })
 

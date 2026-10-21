@@ -16,6 +16,8 @@ export interface ServerInfo {
   protocol: ProtocolVersion
   registration: RegistrationMode
   limits: { maxMessageChars: number; maxGroupMembers: number }
+  /** Origin of the Navidrome server whose accounts may sign in here (CHAT_NAVIDROME_URL), when configured. */
+  musicServer?: string
 }
 
 export interface UserSummary {

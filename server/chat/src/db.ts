@@ -18,6 +18,8 @@ export interface Database {
     display_name: string
     password_hash: string
     role: 'admin' | 'user'
+    /** 'navidrome': created by a Navidrome sign-in, so a later Navidrome sign-in may replace its password. */
+    auth_source: ColumnType<'local' | 'navidrome', 'local' | 'navidrome' | undefined, 'local' | 'navidrome'>
     disabled_at: Date | null
     created_at: Created
     updated_at: Timestamp
@@ -168,6 +170,14 @@ const migrations: Record<string, Migration> = {
     },
     async down(db) {
       await sql`DROP TABLE messages, conversation_members, conversations, invites, sessions, users, server_meta`.execute(db)
+    },
+  },
+  '0002_auth_source': {
+    async up(db) {
+      await sql`ALTER TABLE users ADD COLUMN auth_source text NOT NULL DEFAULT 'local' CHECK (auth_source IN ('local', 'navidrome'))`.execute(db)
+    },
+    async down(db) {
+      await sql`ALTER TABLE users DROP COLUMN auth_source`.execute(db)
     },
   },
 }

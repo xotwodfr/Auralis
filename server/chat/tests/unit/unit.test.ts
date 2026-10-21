@@ -3,7 +3,7 @@ import { checkPassword, cleanDisplayName, normalizeUsername } from '../../src/au
 import { ConfigError, loadConfig } from '../../src/config.ts'
 import { can, type Action } from '../../src/conversations.ts'
 import { hashPassword, newToken, sha256, TOKEN_SHAPE, verifyPassword } from '../../src/crypto.ts'
-import { limiter } from '../../src/http.ts'
+import { clientAddress, limiter } from '../../src/http.ts'
 import { cleanBody } from '../../src/messages.ts'
 
 const DB = { DATABASE_URL: 'postgres://u:p@localhost/x' }
@@ -20,7 +20,8 @@ describe('config', () => {
     [{ CHAT_ALLOWED_ORIGINS: 'https://a.test/' }, /exact origin/],
     [{ CHAT_ALLOWED_ORIGINS: 'https://*.test' }, /exact origin/],
     [{ CHAT_TRUST_PROXY: '1', CHAT_BIND_ADDRESS: '192.168.1.20' }, /loopback/],
-    [{ CHAT_TRUST_PROXY: 'yes' }, /0 or 1/],
+    [{ CHAT_TRUST_PROXY: 'yes' }, /0, 1 or cloudflare/],
+    [{ CHAT_TRUST_PROXY: 'cloudflare', CHAT_BIND_ADDRESS: '0.0.0.0' }, /loopback/],
     [{ CHAT_REGISTRATON: 'open' }, /Unknown setting/],
     [{ CHAT_REGISTRATION: 'public' }, /closed, invite or open/],
     [{ CHAT_PORT: '0' }, /CHAT_PORT/],
@@ -40,6 +41,25 @@ describe('config', () => {
     const { config, warnings } = loadConfig({ ...DB, CHAT_ALLOWED_ORIGINS: 'tauri://localhost, http://tauri.localhost,https://chat.example', CHAT_TRUST_PROXY: '1', CHAT_REGISTRATION: 'open' })
     expect(config.allowedOrigins).toEqual(['tauri://localhost', 'http://tauri.localhost', 'https://chat.example'])
     expect(warnings).toHaveLength(1)
+    expect(config.trustProxy).toBe('forwarded')
+    expect(loadConfig({ ...DB, CHAT_TRUST_PROXY: 'cloudflare' }).config.trustProxy).toBe('cloudflare')
+  })
+})
+
+describe('client address', () => {
+  const req = (headers: Record<string, string>) => ({ headers, socket: { remoteAddress: '127.0.0.1' } }) as never
+  const spoofed = { 'cf-connecting-ip': '6.6.6.6', 'x-forwarded-for': '6.6.6.6, 203.0.113.9' }
+
+  it('uses the socket address unless a proxy is trusted', () => {
+    expect(clientAddress(req(spoofed), false)).toBe('127.0.0.1')
+  })
+
+  it('behind a plain proxy, takes only the hop that proxy appended and ignores a caller-sent CF-Connecting-IP', () => {
+    expect(clientAddress(req(spoofed), 'forwarded')).toBe('203.0.113.9')
+  })
+
+  it('behind Cloudflare, takes CF-Connecting-IP', () => {
+    expect(clientAddress(req(spoofed), 'cloudflare')).toBe('6.6.6.6')
   })
 })
 

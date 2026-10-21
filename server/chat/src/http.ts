@@ -18,12 +18,13 @@ export const notFound = () => new ApiError(404, 'conversation_not_found', 'Conve
 export const badRequest = (message: string) => new ApiError(400, 'bad_request', message)
 export const forbidden = (message: string) => new ApiError(403, 'forbidden', message)
 
-/** Socket address, or the proxy-reported client when CHAT_TRUST_PROXY=1 (only allowed with a loopback bind). */
-export function clientAddress(req: FastifyRequest, trustProxy: boolean): string {
+/** Socket address, or the proxy-reported client when CHAT_TRUST_PROXY is set (only allowed with a loopback bind). */
+export function clientAddress(req: FastifyRequest, trustProxy: false | 'forwarded' | 'cloudflare'): string {
   // Callers control the start of X-Forwarded-For; only the hop the nearest proxy appended (the last) is trustworthy.
-  const forwarded = trustProxy
-    ? String(req.headers['cf-connecting-ip'] ?? '').trim() || String(req.headers['x-forwarded-for'] ?? '').split(',').pop()?.trim()
-    : ''
+  // CF-Connecting-IP is only meaningful when Cloudflare is that proxy; anywhere else a caller can simply send it.
+  const lastHop = () => String(req.headers['x-forwarded-for'] ?? '').split(',').pop()?.trim()
+  const forwarded =
+    trustProxy === 'cloudflare' ? String(req.headers['cf-connecting-ip'] ?? '').trim() || lastHop() : trustProxy === 'forwarded' ? lastHop() : ''
   return forwarded || req.socket.remoteAddress || 'unknown'
 }
 

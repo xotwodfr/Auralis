@@ -6,8 +6,8 @@ import { chatKv } from '../lib/storage'
 import { useAuth } from './auth'
 
 // The chat server connection (CHAT.md §10): its address, which server that is (instanceId), and the signed-in chat
-// account. Stored separately from the Subsonic session (`auralis-chat`), but signed in with the same credentials: the
-// chat server accepts Navidrome logins (CHAT.md §7.1), so a configured chat server signs in by itself (autoSignIn below).
+// account. Stored separately from the Subsonic session (`auralis-chat`). A chat server that accepts Navidrome logins
+// (CHAT.md §7.1) for this music server signs in by itself with the same credentials (autoSignIn below).
 
 interface SavedConfig {
   url: string
@@ -159,10 +159,21 @@ export const useChatServer = create<ChatServerState>()((set, get) => {
  *  retried in a loop. The key lives in memory only. */
 let tried: string | null = null
 
+/** The music-server password only goes to a chat server that advertises this exact music server, and only over HTTPS.
+ *  The address is one the user typed, so this guards against a chat server that was never meant to see the password. */
+function sharesMusicServer(chatUrl: string, info: ServerInfo | null, musicUrl: string): boolean {
+  try {
+    return new URL(chatUrl).protocol === 'https:' && !!info?.musicServer && info.musicServer === new URL(musicUrl).origin
+  } catch {
+    return false
+  }
+}
+
 export function autoSignIn() {
   const chat = useChatServer.getState()
   const { session, hydrated } = useAuth.getState()
   if (!chat.hydrated || !hydrated || !chat.url || chat.token || !session) return
+  if (!sharesMusicServer(chat.url, chat.info, session.credentials.baseUrl)) return
   const { username, password } = session.credentials
   const key = JSON.stringify([chat.url, username, password])
   if (tried === key) return

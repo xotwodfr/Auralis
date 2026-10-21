@@ -76,20 +76,33 @@ export async function navidromeAccepts(baseUrl: string, username: string, passwo
   }
 }
 
-/** Creates the chat account for a Navidrome user (or adopts their current Navidrome password) and puts it in the lobby.
- *  The chat password policy doesn't apply: the password was chosen on the music server. */
+/** Creates the chat account for a Navidrome user and puts it in the lobby, or takes their new Navidrome password for an
+ *  account an earlier Navidrome sign-in created (signing out its other sessions, as a password change does). Accounts
+ *  created locally are never touched: a Navidrome user who shares the name does not get into them. The chat password
+ *  policy doesn't apply: the password was chosen on the music server. */
 async function adoptNavidromeUser(ctx: Ctx, username: string, password: string): Promise<UserRow | null> {
   const password_hash = await hashPassword(password.normalize('NFC'), ctx.config.scryptLogN)
-  return ctx.db.transaction().execute(async (trx) => {
+  const adopted = await ctx.db.transaction().execute(async (trx) => {
+    const existing = await trx.selectFrom('users').selectAll().where('username', '=', username).forUpdate().executeTakeFirst()
+    if (existing) {
+      if (existing.auth_source !== 'navidrome' || existing.role === 'admin' || existing.disabled_at) return null
+      const user = await trx.updateTable('users').set({ password_hash, updated_at: new Date() }).where('id', '=', existing.id).returningAll().executeTakeFirstOrThrow()
+      const revoked = await trx.updateTable('sessions').set({ revoked_at: new Date() }).where('user_id', '=', user.id).where('revoked_at', 'is', null).returning('id').execute()
+      return { user, revoked: revoked.map((r) => r.id) }
+    }
     const user = await trx
       .insertInto('users')
-      .values({ username, display_name: username, password_hash, role: 'user' })
-      .onConflict((oc) => oc.column('username').doUpdateSet({ password_hash, updated_at: new Date() }).where('users.role', '!=', 'admin').where('users.disabled_at', 'is', null))
+      .values({ username, display_name: username, password_hash, role: 'user', auth_source: 'navidrome' })
+      .onConflict((oc) => oc.column('username').doNothing())
       .returningAll()
       .executeTakeFirst()
-    if (user) await joinLobby(trx, user.id)
-    return user ?? null
+    if (!user) return null // created concurrently; the next sign-in sees it
+    await joinLobby(trx, user.id)
+    return { user, revoked: [] as string[] }
   })
+  if (!adopted) return null
+  ctx.hub.closeSessions(adopted.revoked)
+  return adopted.user
 }
 
 export const toMe = (u: UserRow): Me => ({ id: u.id, username: u.username, displayName: u.display_name, role: u.role, createdAt: u.created_at.toISOString() })
@@ -209,9 +222,12 @@ export function publicAuthRoutes(app: FastifyInstance, ctx: Ctx) {
     let upgrade = false
     if (user) ({ ok, upgrade } = await verifyPassword(req.body.password, user.password_hash, config.scryptLogN))
     else if (!config.navidromeUrl) await burnPasswordCheck(req.body.password, config.scryptLogN)
-    // Navidrome accounts sign in with their music-server password; admins and disabled accounts are never taken over.
-    if (!ok && config.navidromeUrl && user?.role !== 'admin' && !user?.disabled_at && /^[a-z0-9_.-]{3,32}$/.test(username)) {
-      if (await navidromeAccepts(config.navidromeUrl, req.body.username.trim(), req.body.password)) {
+    // Navidrome accounts sign in with their music-server password. Only new names and accounts a Navidrome sign-in created
+    // qualify, and Navidrome is asked about the exact ASCII name stored here: Unicode case folding ("\u212a" -> "k") must
+    // not let one Navidrome user stand in for another chat account.
+    const asciiName = /^[A-Za-z0-9_.-]{3,32}$/.test(req.body.username.trim())
+    if (!ok && config.navidromeUrl && asciiName && (!user || user.auth_source === 'navidrome')) {
+      if (await navidromeAccepts(config.navidromeUrl, username, req.body.password)) {
         const adopted = await adoptNavidromeUser(ctx, username, req.body.password)
         if (adopted) ({ user, ok, upgrade } = { user: adopted, ok: true, upgrade: false })
       }

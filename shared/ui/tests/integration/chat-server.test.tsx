@@ -428,13 +428,40 @@ describe('automatic sign-in', () => {
         remember: false,
       },
     })
-    useChatServer.setState({ url: CHAT, info: info() })
+    useChatServer.setState({ url: CHAT, info: info({ musicServer: 'https://music.test' }) })
     await waitFor(() => expect(useChatServer.getState().token).toBe(TOKEN))
     expect(useChatServer.getState().user).toEqual(ME)
     await act(() => useChatServer.getState().signOut())
     await new Promise((r) => setTimeout(r, 50))
     expect(useChatServer.getState().token).toBeNull()
     expect(logins).toHaveLength(1)
+    server.events.removeAllListeners()
+    useAuth.setState({ session: null })
+  })
+
+  // The music-server password only goes to a chat server that says it is tied to that music server, over HTTPS.
+  it.each([
+    ['advertises no music server', CHAT, {}],
+    ['is tied to a different music server', CHAT, { musicServer: 'https://evil.test' }],
+    ['is plain http', 'http://chat.test', { musicServer: 'https://music.test' }],
+  ] as const)('never sends the music-server credentials to a chat server that %s', async (_, url, over) => {
+    const { useAuth } = await import('../../src/state/auth')
+    fakeServer()
+    server.use(http.post('http://chat.test/api/v1/auth/login', () => HttpResponse.json({}, { status: 500 })))
+    const logins: string[] = []
+    server.events.on('request:start', ({ request }) => void (request.url.endsWith('/auth/login') && logins.push(request.url)))
+    useChatServer.setState({ url, info: info(over), token: null, user: null })
+    useAuth.setState({
+      hydrated: true,
+      session: {
+        credentials: { baseUrl: 'https://music.test', username: 'me', password: `secret-${url}-${JSON.stringify(over)}` },
+        server: { apiVersion: '1.16.1', type: 'navidrome' },
+        capabilities: { openSubsonic: true, extensions: [], songLyrics: false },
+        remember: false,
+      },
+    })
+    await new Promise((r) => setTimeout(r, 50))
+    expect(logins).toEqual([])
     server.events.removeAllListeners()
     useAuth.setState({ session: null })
   })

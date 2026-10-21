@@ -10,7 +10,8 @@ export interface Config {
   bindAddress: string
   registration: RegistrationMode
   allowedOrigins: string[]
-  trustProxy: boolean
+  /** Which header names the client behind a loopback-only proxy: the last X-Forwarded-For hop, or Cloudflare's. */
+  trustProxy: false | 'forwarded' | 'cloudflare'
   logLevel: string
   sessionIdleDays: number
   sessionMaxDays: number
@@ -78,11 +79,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, version = '0.0.
     if (!ORIGIN.test(o)) throw new ConfigError(`CHAT_ALLOWED_ORIGINS: "${o}" is not an exact origin (scheme://host[:port]; "*" and "null" are refused)`)
   }
 
-  const trustProxy = env.CHAT_TRUST_PROXY === '1'
-  if (!['', '0', '1', undefined].includes(env.CHAT_TRUST_PROXY)) throw new ConfigError('CHAT_TRUST_PROXY must be 0 or 1')
+  if (!['', '0', '1', 'cloudflare', undefined].includes(env.CHAT_TRUST_PROXY)) throw new ConfigError('CHAT_TRUST_PROXY must be 0, 1 or cloudflare')
+  const trustProxy = env.CHAT_TRUST_PROXY === '1' ? 'forwarded' : env.CHAT_TRUST_PROXY === 'cloudflare' ? 'cloudflare' : false
   const bindAddress = env.CHAT_BIND_ADDRESS || '127.0.0.1'
   // Forwarded headers are client-controlled unless only a local proxy can reach the port.
-  if (trustProxy && !LOOPBACK.has(bindAddress)) throw new ConfigError('CHAT_TRUST_PROXY=1 requires CHAT_BIND_ADDRESS to be a loopback address')
+  if (trustProxy && !LOOPBACK.has(bindAddress)) throw new ConfigError('CHAT_TRUST_PROXY requires CHAT_BIND_ADDRESS to be a loopback address')
 
   const sessionIdleDays = int(env, 'CHAT_SESSION_IDLE_DAYS', 30, 1, 365)
   const sessionMaxDays = int(env, 'CHAT_SESSION_MAX_DAYS', 180, 1, 3650)
