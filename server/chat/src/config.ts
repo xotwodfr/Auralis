@@ -99,6 +99,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, version = '0.0.
     }
     if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new ConfigError('CHAT_NAVIDROME_URL must be http(s)')
     navidromeUrl = u.toString().replace(/\/+$/, '')
+    // Local sign-up would let anyone register a Navidrome user's name first and pose as them (sign-in never adopts it).
+    if (registration === 'open') throw new ConfigError("CHAT_REGISTRATION=open with CHAT_NAVIDROME_URL: anyone could claim a Navidrome user's name before they sign in; use closed (Navidrome users sign in anyway) or invite")
   }
 
   const config: Config = {
@@ -125,6 +127,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, version = '0.0.
 
   const warnings: string[] = []
   const publicOrigin = allowedOrigins.some((o) => o.startsWith('https://') && !/^https:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(o))
+  if (navidromeUrl && registration === 'invite') warnings.push("CHAT_REGISTRATION=invite with CHAT_NAVIDROME_URL: an invited user can take a Navidrome user's name if it is still free in chat")
   if (registration === 'open' && publicOrigin) warnings.push('CHAT_REGISTRATION=open with a public web origin: anyone who can reach the server can create an account')
   return { config, warnings }
 }

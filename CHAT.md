@@ -565,8 +565,8 @@ single self-hosted database. Flagged as [Decision] in §14 so it is not silently
     are never created or changed this way, so a Navidrome user who shares a local account's name does not get into it
     and control of Navidrome doesn't give control of the chat admin. Only plain ASCII usernames qualify, and Navidrome is
     asked about the exact lowercase name stored in chat (Unicode case folding cannot map one user onto another).
-    This works even with `CHAT_REGISTRATION=closed`, which is the recommended mode here: with open sign-up, someone could
-    register a Navidrome user's name locally first and keep that user out of chat. `server-info` advertises the
+    This works with `CHAT_REGISTRATION=closed`. `open` is refused at startup when `CHAT_NAVIDROME_URL` is set (anyone could
+    register a Navidrome user's name locally first and pose as them); `invite` starts with a warning. `server-info` advertises the
     Navidrome origin as `musicServer`.
   - Client: when a chat server is configured, nobody is signed in to chat, the chat address is HTTPS and its `server-info`
     `musicServer` is exactly the origin of the music server the app is signed in to, the app signs in with the Subsonic

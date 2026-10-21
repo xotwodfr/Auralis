@@ -27,6 +27,7 @@ describe('config', () => {
     [{ CHAT_PORT: '0' }, /CHAT_PORT/],
     [{ CHAT_MAX_MESSAGE_CHARS: '5000' }, /CHAT_MAX_MESSAGE_CHARS/],
     [{ CHAT_SESSION_IDLE_DAYS: '90', CHAT_SESSION_MAX_DAYS: '30' }, /cannot exceed/],
+    [{ CHAT_NAVIDROME_URL: 'https://music.test', CHAT_REGISTRATION: 'open' }, /claim a Navidrome user's name/],
   ])('refuses %o', (env, message) => {
     expect(() => loadConfig({ ...DB, ...env })).toThrow(message)
   })
@@ -44,6 +45,12 @@ describe('config', () => {
     expect(config.trustProxy).toBe('forwarded')
     expect(loadConfig({ ...DB, CHAT_TRUST_PROXY: 'cloudflare' }).config.trustProxy).toBe('cloudflare')
   })
+})
+
+it('warns that invited users could claim Navidrome names', () => {
+  const { warnings } = loadConfig({ ...DB, CHAT_NAVIDROME_URL: 'https://music.test', CHAT_REGISTRATION: 'invite' })
+  expect(warnings.join(' ')).toMatch(/Navidrome/)
+  expect(loadConfig({ ...DB, CHAT_NAVIDROME_URL: 'https://music.test' }).warnings).toEqual([])
 })
 
 describe('client address', () => {
