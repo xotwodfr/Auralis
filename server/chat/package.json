@@ -1,0 +1,33 @@
+{
+  "name": "@auralis/chat-server",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Self-hosted chat backend for Auralis (accounts, direct and group conversations, WebSocket delivery). Standalone package with its own lockfile; see CHAT.md.",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "migrate": "node src/migrate.ts",
+    "cli": "node src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fastify/websocket": "^11.3.4",
+    "fastify": "^5.12.7",
+    "kysely": "^0.29.7",
+    "pg": "^8.23.1",
+    "typebox": "^1.4.2"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^12.2.1",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.2",
+    "typescript": "~5.9",
+    "vitest": "^5.0.5",
+    "ws": "^8.22.0"
+  }
+}

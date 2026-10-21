@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.node.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["node", "vitest/globals"],
+    "erasableSyntaxOnly": true
+  },
+  "include": ["src", "tests", "vitest.config.ts", "../../shared/chat-protocol"]
+}

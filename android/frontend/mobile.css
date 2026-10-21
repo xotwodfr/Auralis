@@ -19,7 +19,6 @@
   --accent-link: #1ed760;
   --heat: #1ed760; /* liked = green, not orange */
   --slider-fill: #ffffff;
-  --glass-bg: rgba(40, 40, 40, 0.92);
   --font: 'Figtree', 'Roboto', system-ui, -apple-system, sans-serif;
   --grad-blue: linear-gradient(135deg, #333 0%, #222 100%);
   --sh-card: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -111,7 +110,7 @@
   border-radius: 50%;
 }
 
-.m-round:not(.m-round--glass) {
+.m-round:not(.m-round--tonal) {
   position: relative;
 }
 
@@ -204,7 +203,6 @@
   top: 0;
   z-index: 3;
   background: rgba(18, 18, 18, 0.45);
-  backdrop-filter: blur(12px);
 }
 
 .m-h1 {
@@ -487,7 +485,6 @@
   margin: 0 -16px;
   padding: 0 16px 12px;
   background: rgba(18, 18, 18, 0.45);
-  backdrop-filter: blur(12px);
 }
 
 .m-chip {
@@ -1166,14 +1163,13 @@
   font-size: 0.6875rem;
 }
 
-.m-round--glass {
+.m-round--tonal {
   position: absolute;
   right: 8px;
   bottom: 40px;
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(12px);
+  background: var(--md-surface-high, rgba(255, 255, 255, 0.22));
 }
 
 .m-lyricsfull__foot {
@@ -1298,7 +1294,6 @@
   background: #121212;
   border: 0;
   border-radius: 0;
-  backdrop-filter: none;
 }
 
 [data-platform='mobile'] .queue .vlist {
@@ -1315,7 +1310,6 @@
   background: #282828;
   border: 0;
   border-radius: var(--r-panel) var(--r-panel) 0 0;
-  backdrop-filter: none;
 }
 
 /* Sideways, the panel takes the lyrics half and leaves the cover and transport usable. */
@@ -1352,7 +1346,6 @@
   background: #282828;
   border: 0;
   border-radius: 12px 12px 0 0;
-  backdrop-filter: none;
   animation: m-sheet 0.36s var(--ease-spring);
 }
 
@@ -1497,7 +1490,6 @@
   background: rgba(30, 30, 30, 0.62);
   border: 1px solid var(--hairline);
   border-radius: 16px;
-  backdrop-filter: blur(16px);
 }
 
 .m-set__card > * + * {

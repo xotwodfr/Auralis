@@ -32,11 +32,6 @@
   /* Gradients (placeholder artwork / CTA only) */
   --grad-blue: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
 
-  /* Glass (navigation layer only) */
-  --glass-bg: rgba(245, 245, 247, 0.72);
-  --glass-chip-bg: rgba(255, 255, 255, 0.16);
-  --glass-chip-border: rgba(255, 255, 255, 0.22);
-  --glass-blur: saturate(180%) blur(20px);
 
   /* Lyrics: inactive lines (opacity) and the not-yet-sung words of the active line (share of --text). Lyrics are
      large bold text, so inactive lines keep at least 3:1 on --bg (tests/unit/themes.test.ts). */
@@ -107,9 +102,6 @@
   --danger-text: #ff9c66;
   --accent-link: #409cff;
 
-  --glass-bg: rgba(22, 22, 24, 0.72);
-  --glass-chip-bg: rgba(255, 255, 255, 0.1);
-  --glass-chip-border: rgba(255, 255, 255, 0.14);
 
   --sh-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
   --sh-panel: 0 1px 3px rgba(0, 0, 0, 0.35), 0 14px 40px rgba(0, 0, 0, 0.35);
@@ -135,7 +127,6 @@
   --accent: #5b9dff;
   --accent-link: #7fb2ff;
   --accent-fill: #2f6fd6;
-  --glass-bg: rgba(20, 25, 34, 0.72);
 }
 
 [data-theme='oled'] {
@@ -148,7 +139,6 @@
   --faint: #333333;
   --hairline: rgba(255, 255, 255, 0.12);
   --track: #262626;
-  --glass-bg: rgba(0, 0, 0, 0.78);
 }
 
 [data-theme='nord'] {
@@ -166,7 +156,6 @@
   --accent-link: #9fd0de;
   --accent-fill: #3d6a80;
   --danger-text: #ffb38a;
-  --glass-bg: rgba(59, 66, 82, 0.72);
 }
 
 [data-theme='sunset'] {
@@ -183,7 +172,6 @@
   --accent: #ff9f5a;
   --accent-link: #ffb27a;
   --accent-fill: #b3441d;
-  --glass-bg: rgba(42, 26, 46, 0.72);
   --grad-blue: linear-gradient(135deg, #ff9f5a 0%, #c2467a 100%);
 }
 
@@ -201,7 +189,6 @@
   --accent: #8fc79a;
   --accent-link: #a6d5b0;
   --accent-fill: #2f7d4f;
-  --glass-bg: rgba(22, 33, 27, 0.72);
   --grad-blue: linear-gradient(135deg, #5fa777 0%, #2f7d4f 100%);
 }
 
@@ -221,69 +208,4 @@
   --accent-fill: #b83a72;
   --indigo: #8b6fd1;
   --grad-blue: linear-gradient(135deg, #e58bb0 0%, #a995e0 100%);
-  --glass-bg: rgba(251, 243, 246, 0.72);
-}
-
-/* Glass: only on overlapping navigation layers (toolbar, player bar, overlays).
-   Write only the unprefixed `backdrop-filter`: the production CSS minifier adds -webkit- itself, and when both were
-   hand-written it kept only the prefixed one, which silently removed the blur in Chrome/Firefox builds. */
-.glass-nav {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--hairline);
-}
-
-.glass-overlay {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-panel);
-  box-shadow: var(--sh-overlay);
-}
-
-.glass-chip {
-  background: var(--glass-chip-bg);
-  border: 1px solid var(--glass-chip-border);
-  backdrop-filter: blur(8px);
-}
-
-/* Browsers without backdrop-filter get a more opaque surface so text over scrolled content stays readable. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass-nav,
-  .glass-overlay,
-  .glass-chip {
-    background: var(--surface);
-  }
-}
-
-/* Overlays materialize on mount: opacity + transform only, interruptible (transition, not keyframes). */
-.glass-overlay {
-  transition: opacity 0.4s var(--ease-spring), transform 0.4s var(--ease-spring);
-}
-
-@starting-style {
-  .glass-overlay {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-}
-
-/* Solid fallbacks: reduced transparency or increased contrast turn glass into a plain surface. */
-@media (prefers-reduced-transparency: reduce) {
-  .glass-nav,
-  .glass-overlay,
-  .glass-chip {
-    background: var(--surface);
-    backdrop-filter: none;
-  }
-}
-
-@media (prefers-contrast: more) {
-  .glass-nav,
-  .glass-overlay,
-  .glass-chip {
-    background: var(--surface);
-    backdrop-filter: none;
-    border: 1px solid var(--text-2);
-  }
 }

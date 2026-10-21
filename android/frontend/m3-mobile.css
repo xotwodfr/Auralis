@@ -1,0 +1,335 @@
+/* Material 3 for the phone UI (MATERIA3.md). Loaded after mobile.css and scoped the same way. A dark M3 scheme
+   generated from the app's green seed replaces the flat black/grey look; shape, state layers and motion follow M3. */
+
+:root[data-platform='mobile'] {
+  /* Dark scheme, seed #1ed760 */
+  --md-primary: #7bda94;
+  --md-on-primary: #00391b;
+  --md-primary-container: #00522a;
+  --md-on-primary-container: #96f7ae;
+  --md-secondary-container: #364b3b;
+  --md-on-secondary-container: #d2e8d4;
+  --md-surface-low: #181d18;
+  --md-surface: #1c211c;
+  --md-surface-high: #262b26;
+  --md-surface-highest: #313630;
+  --md-outline: #8a9389;
+  --md-outline-variant: #404940;
+  --md-inverse-surface: #e0e4dc;
+  --md-inverse-on-surface: #2d322c;
+  --md-hover: rgba(224, 228, 220, 0.08);
+  --md-press: rgba(224, 228, 220, 0.12);
+
+  --bg: #101410;
+  --surface: var(--md-surface);
+  --hover: var(--md-surface-high);
+  --text: #e0e4dc;
+  --text-body: #e0e4dc;
+  --text-2: #c0c9be;
+  --text-3: #c0c9be;
+  --text-4: #8a9389;
+  --faint: var(--md-outline-variant);
+  --hairline: rgba(192, 201, 190, 0.12);
+  --track: var(--md-surface-highest);
+  --accent: var(--md-primary);
+  --accent-fill: var(--md-primary);
+  --accent-link: var(--md-primary);
+  --heat: var(--md-primary);
+  --slider-fill: var(--md-primary);
+  --m-tint: #2b3a2e;
+  --m-ease: cubic-bezier(0.2, 0, 0, 1);
+  --m-tabs-h: calc(80px + env(safe-area-inset-bottom, 0px));
+  --m-mini-h: 64px;
+  --font: 'Roboto Flex Variable', Roboto, 'Google Sans', system-ui, sans-serif;
+}
+
+/* Type: M3 uses regular-weight headlines */
+[data-platform='mobile'] :is(.m-h1, .m-h2) {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+[data-platform='mobile'] .m-h1 {
+  font-size: 1.75rem;
+}
+
+/* Buttons */
+[data-platform='mobile'] .btn {
+  color: var(--md-primary);
+  font-weight: 500;
+  border: 1px solid var(--md-outline);
+}
+
+[data-platform='mobile'] :is(.btn--primary, .btn--danger) {
+  color: var(--md-on-primary);
+  background: var(--md-primary);
+  border-color: transparent;
+}
+
+[data-platform='mobile'] .btn--danger {
+  color: #690005;
+  background: #ffb4ab;
+}
+
+/* Replace the press-scale with M3 state layers; the ripple (app/ripple.ts) supplies the touch feedback. */
+[data-platform='mobile'] :is(.icon-btn, .btn, .m-round, .m-play, .m-chip, .m-tab, .m-row, .m-song__main, .m-tile a, .m-quick__item, .m-browse__tile, .m-mini__open, .m-lyrics__expand, .choice, .menu__item):active:not(:disabled) {
+  transform: none;
+  opacity: 1;
+}
+
+[data-platform='mobile'] :is(.m-row, .m-song__main, .menu__item, .choice):active {
+  background-color: var(--md-press);
+}
+
+[data-platform='mobile'] .m-play,
+[data-platform='mobile'] .m-player .icon-btn--main {
+  color: var(--md-on-primary-container);
+  background: var(--md-primary-container);
+  border-radius: 16px; /* FAB shape */
+  transition: border-radius 0.3s var(--m-ease), background-color 0.2s var(--m-ease);
+}
+
+/* Playing morphs the FAB toward a circle (M3 expressive shape morph). */
+[data-platform='mobile'] .m-player .icon-btn--main[aria-label='Pause'] {
+  border-radius: 28px;
+}
+
+/* Surfaces and shapes */
+[data-platform='mobile'] .artwork,
+.m-quick__item,
+.m-browse__tile {
+  border-radius: 12px;
+}
+
+.m-quick__item {
+  background: var(--md-surface-high);
+}
+
+.m-search,
+[data-platform='mobile'] .social__search {
+  min-height: 56px;
+  background: var(--md-surface-high);
+  border-radius: 28px;
+}
+
+.m-top--sticky,
+.m-chips {
+  background: var(--bg);
+}
+
+[data-platform='mobile'] .queue {
+  background: var(--bg);
+}
+
+[data-platform='mobile'] .fx {
+  background: var(--md-surface-low);
+  border-radius: 28px 28px 0 0;
+}
+
+.m-page--settings .panel,
+.m-set__card,
+[data-platform='mobile'] .list-panel,
+[data-platform='mobile'] .social__privacy {
+  background: var(--md-surface);
+  border: 0;
+  border-radius: 16px;
+}
+
+/* Filter chips */
+.m-chip {
+  min-height: 32px;
+  padding: 0 16px;
+  color: var(--text-2);
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 8px;
+}
+
+.m-chip[aria-pressed='true'],
+[data-platform='mobile'] .m-chip[aria-current='page'],
+[data-platform='mobile'] .eq__presets .m-chip[aria-pressed='true'] {
+  color: var(--md-on-secondary-container);
+  background: var(--md-secondary-container);
+  border-color: transparent;
+}
+
+/* Navigation bar */
+.m-tabs {
+  height: var(--m-tabs-h);
+  padding: 12px 0 max(env(safe-area-inset-bottom, 0px), 16px);
+  background: var(--md-surface);
+}
+
+.m-tab {
+  gap: 4px;
+  color: var(--text-2);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 16px;
+}
+
+.m-tab svg {
+  box-sizing: content-box;
+  padding: 4px 20px;
+  border-radius: 16px;
+  background: linear-gradient(var(--md-secondary-container), var(--md-secondary-container)) center / 0% 100% no-repeat;
+  transition: background-size 0.3s var(--m-ease);
+}
+
+.m-tab[aria-current='page'] {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.m-tab[aria-current='page'] svg {
+  color: var(--md-on-secondary-container);
+  background-size: 100% 100%;
+  stroke-width: 2.2;
+}
+
+/* Mini player: a tonal card floating above the bar, tinted by the cover */
+.m-mini {
+  margin: 0 12px 8px;
+  padding: 0 8px 0 8px;
+  background: color-mix(in oklab, var(--tint, var(--md-surface-high)) 35%, var(--md-surface-highest));
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+}
+
+.m-mini .m-thumb .artwork {
+  border-radius: 8px;
+}
+
+.m-mini__line {
+  right: 16px;
+  left: 16px;
+  height: 4px;
+  background: var(--md-surface-low);
+}
+
+.m-mini__line > span {
+  background: var(--md-primary);
+}
+
+/* Switches */
+.m-switch {
+  width: 52px;
+  height: 32px;
+  background: var(--md-surface-highest);
+  border: 2px solid var(--md-outline);
+  border-radius: 16px;
+}
+
+.m-switch span {
+  top: 6px;
+  left: 6px;
+  width: 16px;
+  height: 16px;
+  background: var(--md-outline);
+  transition: transform 0.3s var(--m-ease), width 0.3s var(--m-ease), height 0.3s var(--m-ease), top 0.3s var(--m-ease), left 0.3s var(--m-ease), background-color 0.2s var(--m-ease);
+}
+
+.m-switch[aria-checked='true'] {
+  background: var(--md-primary);
+  border-color: var(--md-primary);
+}
+
+.m-switch[aria-checked='true'] span {
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: var(--md-on-primary);
+  transform: translateX(20px);
+}
+
+.m-switch:active span {
+  width: 28px;
+  height: 28px;
+  top: 0;
+  left: 0;
+}
+
+/* Segmented buttons */
+[data-platform='mobile'] :is(.m-set, .fx) .segmented {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background: none;
+  border: 1px solid var(--md-outline);
+  border-radius: 20px;
+}
+
+[data-platform='mobile'] :is(.m-set, .fx) .segmented__item {
+  border-radius: 0;
+}
+
+[data-platform='mobile'] :is(.m-set, .fx) .segmented__item + .segmented__item {
+  border-left: 1px solid var(--md-outline);
+}
+
+[data-platform='mobile'] :is(.m-set, .fx) .segmented__item[aria-checked='true'] {
+  color: var(--md-on-secondary-container);
+  background: var(--md-secondary-container);
+}
+
+/* Bottom sheets: M3 shape, drag handle, emphasized entrance */
+[data-platform='mobile'] .scrim {
+  background: rgba(0, 0, 0, 0.32);
+}
+
+[data-platform='mobile'] .dialog {
+  padding-top: 36px;
+  background: var(--md-surface-low);
+  border-radius: 28px 28px 0 0;
+  box-shadow: none;
+  animation: m-sheet 0.5s cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
+[data-platform='mobile'] .dialog::before {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 32px;
+  height: 4px;
+  background: var(--md-outline);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  content: '';
+}
+
+[data-platform='mobile'] .dialog {
+  position: relative;
+}
+
+/* Snackbars */
+[data-platform='mobile'] .toast {
+  color: var(--md-inverse-on-surface);
+  background: var(--md-inverse-surface);
+}
+
+/* Page transitions: fade through, emphasized decelerate */
+.m-route {
+  animation: m-page-in 0.3s cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
+@keyframes m-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-route,
+  [data-platform='mobile'] .dialog {
+    animation: none;
+  }
+
+  .m-tab svg,
+  .m-switch span,
+  [data-platform='mobile'] .m-play {
+    transition: none;
+  }
+}

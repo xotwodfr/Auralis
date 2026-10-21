@@ -3,6 +3,8 @@ import { useEffect, useMemo } from 'react'
 import { getNowPlaying } from '../../api/subsonic/endpoints'
 import type { ChatMessage, NowPlayingEntry } from '../../api/subsonic/types'
 import { useAuth } from '../../state/auth'
+import { startChat, useChatUnread } from '../../state/chat'
+import { useChatServer } from '../../state/chatServer'
 import { sameUser, unreadCount, useSocial } from '../../state/social'
 
 /** How often a Social view refreshes who is playing what. */
@@ -84,9 +86,17 @@ export function usePeople() {
   return { activity, people: list }
 }
 
+/** Unread across both sources: the Subsonic room and the chat server's conversations. */
 export function useUnread(): number {
   const me = useMe()
-  return useSocial((s) => unreadCount(s, me))
+  return useSocial((s) => unreadCount(s, me)) + useChatUnread()
+}
+
+/** Keeps the chat server socket open while signed in to it (one per app: the Shell / phone app mounts this). */
+export function useChatConnection() {
+  const url = useChatServer((s) => s.url)
+  const token = useChatServer((s) => s.token)
+  useEffect(() => (url && token ? startChat() : undefined), [url, token])
 }
 
 /** Keeps the chat (and so the unread count) fresh: every `ms` while the window is visible, and on returning to it. */

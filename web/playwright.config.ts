@@ -2,6 +2,10 @@ import { defineConfig } from '@playwright/test'
 
 const APP_PORT = 5199
 const MOCK_PORT = 4599
+const CHAT_PORT = 8791
+// The real chat server (server/chat) against a PostgreSQL the caller provides, e.g. CI's service container. Without it,
+// e2e/chat.spec.ts skips. The database must be empty or a previous e2e run's (users get unique names per run).
+const CHAT_DB = process.env.E2E_CHAT_DATABASE_URL
 
 export default defineConfig({
   testDir: './e2e',
@@ -33,5 +37,20 @@ export default defineConfig({
       },
       reuseExistingServer: false,
     },
+    ...(CHAT_DB
+      ? [
+          {
+            command: 'node ../server/chat/src/migrate.ts && node ../server/chat/src/main.ts',
+            url: `http://127.0.0.1:${CHAT_PORT}/readyz`,
+            env: {
+              DATABASE_URL: CHAT_DB, CHAT_PORT: String(CHAT_PORT), CHAT_LISTEN_HOST: '127.0.0.1', CHAT_BIND_ADDRESS: '127.0.0.1',
+              CHAT_REGISTRATION: 'open', CHAT_ALLOWED_ORIGINS: `http://127.0.0.1:${APP_PORT}`, CHAT_LOG_LEVEL: 'warn',
+              // Lets the spec give each API sign-up its own address (sign-ups are rate-limited per address).
+              CHAT_TRUST_PROXY: '1',
+            },
+            reuseExistingServer: false,
+          },
+        ]
+      : []),
   ],
 })

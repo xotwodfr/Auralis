@@ -17,7 +17,8 @@ Apple-inspired Liquid Glass interface and word-by-word synced lyrics.
 - **Social** — top-left in the app: who on your server is playing what (with one-tap play), the server's chat room where
   the server has one, and people/profiles built only from that data. Sharing your own listening is **off** until you
   turn it on. Navidrome has no chat and no Subsonic server has friends or direct messages, so Auralis says so instead
-  of faking them.
+  of faking them. Direct and group messages come from an optional self-hosted **Auralis chat server**
+  ([`server/chat`](server/chat/README.md), its own accounts, Docker + PostgreSQL), set up in Settings → Chat server.
 - **Lyrics** — server lyrics first, [LRCLIB](https://lrclib.net) as fallback, and optional syllable-level lyrics from
   Spicy Lyrics (the active syllable lifts and glows as it is sung).
 

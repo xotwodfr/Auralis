@@ -22,7 +22,7 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <aside id="queue-panel" className="queue glass-overlay" aria-label="Queue" onKeyDown={onKeyDown}>
+    <aside id="queue-panel" className="queue surface-overlay" aria-label="Queue" onKeyDown={onKeyDown}>
       <header className="queue__head">
         <h2 ref={heading} tabIndex={-1} className="queue__title">
           Queue

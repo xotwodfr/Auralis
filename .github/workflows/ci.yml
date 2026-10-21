@@ -7,6 +7,14 @@ jobs:
   # shared/ui, server, web and the frontends of tauri and android: everything that is TypeScript.
   web:
     runs-on: ubuntu-latest
+    # A real PostgreSQL for the chat e2e (web/e2e/chat.spec.ts starts server/chat against it).
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env: { POSTGRES_USER: e2e, POSTGRES_PASSWORD: e2e, POSTGRES_DB: chat_e2e }
+        ports: ['127.0.0.1:5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U e2e -d chat_e2e" --health-interval 5s --health-timeout 3s --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,7 +27,35 @@ jobs:
       - run: npm run build -w @auralis/tauri
       - run: npm run build -w @auralis/android
       - run: npx playwright install --with-deps chromium
+      - run: npm ci --prefix server/chat
       - run: npm run test:e2e
+        env: { E2E_CHAT_DATABASE_URL: 'postgres://e2e:e2e@127.0.0.1:5432/chat_e2e' }
+
+  # The self-hosted chat server (server/chat): its own lockfile, real-PostgreSQL tests (Testcontainers), and the Docker
+  # image + Compose stack with the persistence smoke check (CHAT.md §8.3, §13).
+  chat-server:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: server/chat }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: server/chat/package-lock.json }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Secret scan
+        # Tokens look like ac1_ + 43 base64url characters; private keys and filled-in passwords must never be committed.
+        run: |
+          ! git grep -nE 'ac1_[A-Za-z0-9_-]{43}|BEGIN [A-Z ]*PRIVATE KEY' -- . ':!tests' && test -z "$(git ls-files secrets .env)"
+      - name: Docker smoke (health, persistence across down/up and --force-recreate)
+        run: |
+          install -d -m 700 secrets && openssl rand -base64 32 > secrets/db_password && chmod 600 secrets/db_password
+          cp .env.example .env
+          docker compose build
+          ./scripts/smoke.sh
+      - if: always()
+        run: docker compose down -v || true
 
   tauri-linux:
     runs-on: ubuntu-latest

@@ -1,5 +1,10 @@
 # Auralis — Design
 
+> **Superseded in part by Material 3 (see `MATERIA3.md`).** Web, desktop and Android now use M3 tonal surfaces,
+> shapes, state layers and motion (`shared/ui/src/styles/m3.css`, `android/frontend/m3-mobile.css`). There is no
+> glass any more: wherever this file says "glass", read "solid tonal surface". Narrow web screens use a bottom
+> navigation bar. The rest (tokens, themes, lyrics, accessibility rules) still applies.
+
 > The visual system: tokens, Liquid Glass rules, navigation, screens, motion, performance, and
 > accessibility. Applies the installed `apple-liquid-glass` and `frontend-design` skills. Do not
 > duplicate the skill docs here — this file records how Auralis *uses* them.
@@ -62,8 +67,7 @@ needs the server to send CORS headers for cover art; otherwise the default palet
 5. **Materialize on enter/exit** (blur + scale + opacity together), scrim fades slightly faster.
 6. **Artwork is the color.** The UI stays grayscale so cover art carries the visual life.
 
-Reusable CSS classes: `.glass-nav` (`rgba(245,245,247,.72)` + `blur(20px) saturate(180%)`),
-`.glass-chip` (glass on colored ground). Dark-theme variants override the background alpha.
+Reusable CSS class: `.surface-overlay` (raised tonal surface for dialogs, toasts, queue and effects panels).
 
 ## 3. Navigation & layout
 
@@ -104,8 +108,8 @@ right-side or overlay lyrics panel on Now Playing.
 - **Narrow screens (≤720px):** the sidebar becomes a horizontally scrolling strip of icon-above-label tabs above the
   content, with Settings pinned at its right behind a hairline; the active tab is underlined instead of edge-barred.
 - **Toolbar:** a Back button on detail routes, then the search field.
-- **Toolbar:** glass (content scrolls under it).
-- **Playback bar:** glass (content scrolls under it); fixed, height ~72px, ≥44px targets.
+- **Toolbar:** M3 top app bar on the page ground, with a search bar.
+- **Playback bar:** floating tonal card (M3 surface-container-highest), fixed, ≥44px targets.
 - **Lyrics panel:** on Now Playing, a right column (≈ 64 %) beside the artwork on wide screens; on narrow screens a
   compact header (64 px art + title) above a full-width lyrics stage.
 
@@ -176,8 +180,8 @@ Icons: line style on one 24-grid stroke, `currentColor`, grayscale; accent only 
 - **Reduced motion:** instant scroll, no rising syllables; the colour sweep stays (it carries timing, not travel).
   Increased contrast: dim 0.72, no edge mask. Reduced transparency: no artwork glow.
 - **Colour:** the cover's own colours as a soft, static glow behind the artwork (blurred once, bounded to the art);
-  Album Artwork theme tints the whole ground as before. Manual scroll shows a glass "Back to current line" pill —
-  glass because it floats over scrolled lyrics.
+  Album Artwork theme tints the whole ground as before. Manual scroll shows a tonal "Back to current line" pill
+  floating over the lyrics.
 - **States:** loading shows lyric-shaped placeholder bars (no layout jump when lines arrive); empty/error/instrumental
   centre in the stage area; the attribution line is always on screen with synced lyrics (stage footer).
 

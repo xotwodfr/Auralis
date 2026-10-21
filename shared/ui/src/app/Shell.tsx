@@ -5,7 +5,7 @@ import { ToastRegion } from '../ui/Toast'
 import { Icon, type IconName } from '../ui/Icon'
 import SearchBox from '../features/search/SearchBox'
 import { Badge } from '../features/social/Social'
-import { CHAT_POLL_BACKGROUND_MS, useChatPolling, useUnread } from '../features/social/data'
+import { CHAT_POLL_BACKGROUND_MS, useChatConnection, useChatPolling, useUnread } from '../features/social/data'
 import { useAuth } from '../state/auth'
 import ErrorBoundary from './ErrorBoundary'
 import { useShortcuts } from './shortcuts'
@@ -62,6 +62,7 @@ function NavItem({ to, label, icon, rail, badge = 0 }: Item & { rail: boolean; b
 export default function Shell() {
   useShortcuts()
   useChatPolling(CHAT_POLL_BACKGROUND_MS)
+  useChatConnection()
   const unread = useUnread()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -144,7 +145,7 @@ export default function Shell() {
       </nav>
 
       <div className="app__main">
-        <header className="toolbar glass-nav">
+        <header className="toolbar">
           {DETAIL.test(pathname) && (
             <button type="button" className="icon-btn" aria-label="Back" title="Back" onClick={() => navigate(-1)}>
               <Icon name="back" size={22} />

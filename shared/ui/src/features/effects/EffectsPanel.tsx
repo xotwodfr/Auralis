@@ -91,7 +91,7 @@ export function EffectsPanel({ onClose }: { onClose: () => void }) {
   return (
     <aside
       id={PANEL_ID}
-      className="fx glass-overlay"
+      className="fx surface-overlay"
       aria-labelledby={titleId}
       onKeyDown={(e) => {
         if (e.key !== 'Escape') return

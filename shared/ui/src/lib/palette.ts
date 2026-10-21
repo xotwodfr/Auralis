@@ -1,11 +1,11 @@
-import { hexToRgb, hslToHex, rgbToHsl, withContrast } from './color'
+import { hslToHex, rgbToHsl, withContrast } from './color'
 
 /** CSS custom properties to overlay on the dark base; values are plain colours/gradients, never markup. */
 export type PaletteVars = Record<(typeof PALETTE_KEYS)[number], string>
 
 export const PALETTE_KEYS = [
   '--bg', '--surface', '--hover', '--faint', '--track', '--hairline', '--text', '--text-body', '--text-2', '--text-3',
-  '--accent', '--accent-link', '--accent-fill', '--glass-bg', '--glass-chip-bg', '--slider-fill', '--grad-blue',
+  '--accent', '--accent-link', '--accent-fill', '--slider-fill', '--grad-blue',
 ] as const
 
 export interface Palette {
@@ -21,8 +21,6 @@ const NEUTRAL_HUE = 222
 const SAT_MIN = 0.4
 const SAT_MAX = 0.72
 const MIN_TEXT_CONTRAST = 4.5
-
-const rgba = (hex: string, a: number) => `rgba(${hexToRgb(hex).join(', ')}, ${a})`
 
 /**
  * Builds an always-dark palette from RGBA pixels. Lightness is fixed by us (not taken from the art), so
@@ -78,8 +76,6 @@ export function derivePalette(pixels: Uint8ClampedArray | number[]): Palette {
       '--accent': accent,
       '--accent-link': accentLink,
       '--accent-fill': accentFill,
-      '--glass-bg': rgba(surface, 0.72),
-      '--glass-chip-bg': 'rgba(255, 255, 255, 0.1)',
       '--slider-fill': accent,
       '--grad-blue': `linear-gradient(135deg, ${hslToHex(h, sat, 0.45)} 0%, ${hslToHex((h + 40) % 360, sat, 0.32)} 100%)`,
     },

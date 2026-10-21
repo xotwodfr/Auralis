@@ -7,7 +7,9 @@ import NowPlaying from './features/nowplaying/NowPlaying'
 import Search from './features/search/Search'
 import Settings from './features/settings/Settings'
 import { Activity, ChatIndex, ChatLayout, ChatThread, People, Profile, SocialLayout } from './features/social/Social'
+import { ConversationThread } from './features/social/ChatServer'
 import { useAuth } from './state/auth'
+import { useChatServer } from './state/chatServer'
 import { useSettings } from './state/settings'
 import { useSpotifyLinks } from './state/spotifyLinks'
 import { usePlayback } from './state/playback'
@@ -26,6 +28,7 @@ export default function App({ shell: PlatformShell }: { shell?: ComponentType<{ 
     void useAuth.getState().restore()
     void useSettings.getState().restore()
     void useSpotifyLinks.getState().restore()
+    void useChatServer.getState().restore()
   }, [])
 
   // Rehydrate the queue (paused) once we know who is signed in.
@@ -61,6 +64,7 @@ export default function App({ shell: PlatformShell }: { shell?: ComponentType<{ 
           <Route path="chat" element={<ChatLayout />}>
             <Route index element={<ChatIndex />} />
             <Route path=":room" element={<ChatThread />} />
+            <Route path="c/:conversationId" element={<ConversationThread />} />
           </Route>
         </Route>
       </Route>

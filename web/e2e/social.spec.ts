@@ -94,14 +94,14 @@ test('sharing: off by default; turning it on makes the user show up for others',
   await expect.poll(async () => (await (await request.get(`${MOCK}/__stats`)).json()).scrobble ?? 0, { timeout: 10_000 }).toBeGreaterThan(0)
 })
 
-test('narrow web: Social is the first tab at the top-left, without horizontal overflow', async ({ page }) => {
+test('narrow web: Social is the first tab of the bottom navigation bar, without horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 740 })
   await connect(page)
   const social = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Social' })
   await expect(social).toBeVisible()
   const box = (await social.boundingBox())!
   expect(box.x).toBeLessThan(20)
-  expect(box.y).toBeLessThan(20)
+  expect(box.y).toBeGreaterThan(740 - 100) // M3 navigation bar sits at the bottom
   for (const path of ['/social', '/social/chat/server', '/social/people', '/social/people/alex']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { name: 'Social', level: 1 })).toBeVisible()

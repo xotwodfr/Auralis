@@ -33,10 +33,10 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
     }
   }
 
-  // Portalled: a glass ancestor's backdrop-filter would otherwise become the containing block of `position: fixed`.
+  // Portalled: a transformed or filtered ancestor would otherwise become the containing block of `position: fixed`.
   return createPortal(
     <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={box} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="dialog glass-overlay" onKeyDown={onKeyDown}>
+      <div ref={box} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="dialog surface-overlay" onKeyDown={onKeyDown}>
         <h2 id={titleId} className="dialog__title">
           {title}
         </h2>

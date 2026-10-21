@@ -98,7 +98,7 @@ test('a track with no Spotify match keeps its server lyrics', async ({ page }) =
   await expect(page.locator('summary')).toContainText('· no Spotify match')
 })
 
-test('production CSS keeps the sweep, the edge fade and the glass resume control; manual scroll and resume work', async ({ page }) => {
+test('production CSS keeps the sweep, the edge fade and the tonal resume control; manual scroll and resume work', async ({ page }) => {
   await play(page, 'Quiet Hours')
   const lyrics = page.getByRole('region', { name: 'Lyrics' })
   await expect(lyrics.getByRole('button', { name: 'I count the lights' })).toBeVisible()
@@ -115,7 +115,7 @@ test('production CSS keeps the sweep, the edge fade and the glass resume control
   const resume = page.getByRole('button', { name: 'Back to current line' })
   await expect(resume).toBeVisible()
   await expect(page.getByRole('button', { name: 'Follow playback' })).toHaveAttribute('aria-pressed', 'false')
-  expect(await resume.evaluate((el) => getComputedStyle(el).backdropFilter)).toContain('blur')
+  expect(await resume.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toMatch(/rgba\(0, 0, 0, 0\)|transparent/)
   await resume.click()
   await expect(resume).toBeHidden()
   // Back in the focal region: the active line sits about a third of the way down the lyrics viewport.

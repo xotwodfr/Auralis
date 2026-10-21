@@ -126,7 +126,8 @@ criteria above that it affects are met.
 | `npm test` | Vitest (jsdom, plus the Node-environment backend tests): unit, component and MSW-mocked integration tests, 531 tests. No network, no real server, no real Spicy Lyrics key or Spotify credentials. |
 | `npm run typecheck` / `npm run lint` | `tsc -p` per workspace (app, tests, Playwright specs) / ESLint 9 flat config plus `scripts/check-boundaries.mjs`, which fails on any import that crosses a platform boundary. |
 | `npm run build` | Type-check + production web bundle (`web/dist/`). `npm run build -w @auralis/tauri` / `-w @auralis/android` build the other two bundles. |
-| `npm run test:e2e` | Playwright against the **production build** and a mock Subsonic server. |
+| `npm run test:e2e` | Playwright against the **production build** and a mock Subsonic server. With `E2E_CHAT_DATABASE_URL` set (CI's PostgreSQL service), also starts the real chat server for `web/e2e/chat.spec.ts`; without it that spec is skipped. |
+| `npm run test:chat` / `npm run typecheck:chat` | The chat server's own suite (`server/chat`, own lockfile: `npm ci --prefix server/chat` first): unit tests plus HTTP/WebSocket integration tests against a real PostgreSQL started by Testcontainers (needs Docker). |
 
 ### Browser tests (`web/e2e/`, `android/e2e/`)
 - `web/playwright.config.ts` starts two servers (`android/playwright.config.ts` does the same for the phone-UI build, on ports 5299/4699 so both suites can run side by side): `shared/ui/testing/mock-server.mjs` (deterministic Subsonic/OpenSubsonic fixtures, real
@@ -239,3 +240,19 @@ of the viewport**, within the DESIGN.md §7 cap. **The glass is not a measured c
 The reported sluggishness on one laptop was **not reproduced**. Every scenario above runs at the 60 fps display cap
 under software rendering, which hides any headroom difference — a machine with less headroom could still stutter where
 this one does not. The useful next step is a DevTools performance trace recorded on that laptop, not more changes here.
+
+## 11. Chat server (CHAT.md) — as built
+
+Run on this development machine (Linux, Node 22.23, Docker 29, `postgres:18-alpine` 18.6), 2026-10-20:
+
+| Suite | Result |
+|---|---|
+| `server/chat` unit (config refusals, scrypt/tokens, permission table, body sanitising, limiter, Compose/Dockerfile invariants, no TLS-disabling code) | 42 passed |
+| `server/chat` integration, real PostgreSQL via Testcontainers (auth/session lifecycle, registration modes, throttling, CORS, 413, route inventory: every non-public route 401 without a token and every conversation route 404 for a non-member, DM race → one row, 50 concurrent senders → seq 1..50, idempotent retries, pagination both ways, read monotonic, soft delete, logging never contains tokens/passwords/bodies, DB down → 503; WebSocket: first-frame auth, Origin 403, 4401/4400/4408/1009/4429, socket cap, delivery only to current members, removal stops delivery, revoke/disable close within 1 s, CLI-revocation re-validation, reconnect + `afterSeq` resync, shutdown 1001) | 39 passed |
+| `shared/ui` chat unit (URL policy table, backoff, merge/resync, parsing, UUID without secure context, error texts) | 28 passed |
+| `shared/ui` chat integration (MSW HTTP + `ws`: settings flow, live delivery, gap fetch, reconnect, 4401 sign-out, outbox order/retry/fail-after-5/manual retry, malformed payloads, server switch leaves `auralis` byte-identical, Social through `App` with a Navidrome-style 410 room) | 12 passed |
+| `web/e2e/chat.spec.ts` (two browser contexts, real server + PostgreSQL: settings → sign in, DM and group live both ways, offline send arrives exactly once, non-member 404, axe clean, Subsonic room unchanged) | passed (whole web e2e: 42 passed; Android e2e: 2 passed) |
+| `server/chat/scripts/smoke.sh` (Compose up, persistence across `down`/`up` and `--force-recreate`, no anonymous volume, `db` unpublished), backup → wipe → restore, SIGTERM exit 0 | passed |
+
+Not run: Tauri desktop runtime, an Android device, iOS/macOS (no chat client yet), the §13.3 load/soak targets, and the
+LAN/Tailscale/public network checklist (§13.5), which needs the real host.

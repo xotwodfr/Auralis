@@ -1,17 +1,19 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { isMobileApp } from '../../app/platform'
 import { SubsonicError } from '../../api/subsonic/errors'
-import type { ChatMessage, NowPlayingEntry } from '../../api/subsonic/types'
+import type { NowPlayingEntry } from '../../api/subsonic/types'
 import { useAuth } from '../../state/auth'
+import { useChatServer } from '../../state/chatServer'
 import { usePlayback } from '../../state/playback'
 import { useSettings } from '../../state/settings'
-import { MAX_MESSAGE, sameUser, useSocial } from '../../state/social'
+import { MAX_MESSAGE, sameUser, unreadCount, useSocial } from '../../state/social'
 import { Icon } from '../../ui/Icon'
 import { EmptyState, ErrorState, Skeleton } from '../../ui/State'
 import { Toggle } from '../../ui/Toggle'
 import { connectErrorMessage } from '../connect/errorMessage'
 import { Cover } from '../library/components'
+import { ChatServerConversations, ChatServerIndex, SetupChatServerNote } from './ChatServer'
 import { CHAT_POLL_OPEN_MS, formatMessageTime, isLive, statusText, useActivity, useChatPolling, useMe, usePeople, useUnread, type Person } from './data'
 
 /** Subsonic has one chat room per server; the id leaves room for direct and group conversations later. */
@@ -280,38 +282,51 @@ function ChatUnavailable() {
   const type = useAuth((s) => s.session?.server.type)
   const name = type ? type.charAt(0).toUpperCase() + type.slice(1) : 'This server'
   return (
-    <EmptyState
-      title="Chat isn’t available on this server"
-      hint={`${name} doesn’t provide the Subsonic chat room, so there is nothing to read or send. Servers such as Airsonic do.`}
-    />
+    <div className="social__convs">
+      <EmptyState
+        title="Chat isn’t available on this server"
+        hint={`${name} doesn’t provide the Subsonic chat room, so there is nothing to read or send. Servers such as Airsonic do.`}
+      />
+      <SetupChatServerNote />
+    </div>
   )
 }
+
+/** Signed in to an Auralis chat server (its conversations are a second source next to the Subsonic room). */
+const useChatServerSignedIn = () => useChatServer((s) => s.token !== null && s.url !== null)
 
 export function ConversationList() {
   const chat = useSocial((s) => s.chat)
   const last = useSocial((s) => s.messages.at(-1))
-  const unread = useUnread()
   const me = useMe()
+  const unread = useSocial((s) => unreadCount(s, me))
   const host = useHost()
-  if (chat === 'unsupported') return <ChatUnavailable />
+  const chatServer = useChatServerSignedIn()
+  if (chat === 'unsupported' && !chatServer) return <ChatUnavailable />
   const preview = chat === 'unknown' || chat === 'loading' ? 'Loading…' : last ? `${sameUser(last.username, me) ? 'You' : last.username}: ${last.message}` : chat === 'error' ? 'Couldn’t load messages' : 'No messages yet'
   return (
     <div className="social__convs">
-      <ul className="list-panel social__list" aria-label="Conversations">
-        <li>
-          <NavLink to={roomHref(SERVER_ROOM)} className="row social__conv" aria-label={`Everyone on ${host}${unread ? `, ${unread} unread` : ''}`}>
-            <span className="avatar" aria-hidden>
-              <Icon name="people" size={18} />
-            </span>
-            <span className="row__text">
-              <span className="row__title">Everyone on {host}</span>
-              <span className="row__sub social__preview">{preview}</span>
-            </span>
-            <Badge count={unread} />
-          </NavLink>
-        </li>
-      </ul>
-      <p className="social__note">Your server’s shared chat room: everyone signed in can read it. Subsonic servers have no direct or group messages.</p>
+      {chatServer && <ChatServerConversations />}
+      {chat !== 'unsupported' && (
+        <>
+          <ul className="list-panel social__list" aria-label="Conversations">
+            <li>
+              <NavLink to={roomHref(SERVER_ROOM)} className="row social__conv" aria-label={`Everyone on ${host}${unread ? `, ${unread} unread` : ''}`}>
+                <span className="avatar" aria-hidden>
+                  <Icon name="people" size={18} />
+                </span>
+                <span className="row__text">
+                  <span className="row__title">Everyone on {host}</span>
+                  <span className="row__sub social__preview">{preview}</span>
+                </span>
+                <Badge count={unread} />
+              </NavLink>
+            </li>
+          </ul>
+          <p className="social__note">Your server’s shared chat room: everyone signed in can read it. Subsonic servers have no direct or group messages.</p>
+        </>
+      )}
+      {!chatServer && <SetupChatServerNote />}
     </div>
   )
 }
@@ -319,7 +334,8 @@ export function ConversationList() {
 /** Web: conversations beside the open one (one room today, so it opens straight away). */
 export function ChatLayout() {
   const chat = useSocial((s) => s.chat)
-  if (chat === 'unsupported') return <ChatUnavailable />
+  const chatServer = useChatServerSignedIn()
+  if (chat === 'unsupported' && !chatServer) return <ChatUnavailable />
   return (
     <div className="social__chat">
       <ConversationList />
@@ -328,7 +344,15 @@ export function ChatLayout() {
   )
 }
 
-export const ChatIndex = () => <Navigate to={roomHref(SERVER_ROOM)} replace />
+/** With only the Subsonic room there is nothing to choose, so it opens; with chat server conversations, the list stays. */
+export function ChatIndex() {
+  const chat = useSocial((s) => s.chat)
+  const chatServer = useChatServerSignedIn()
+  // Wait for the saved chat session, or a reload would always jump into the Subsonic room.
+  if (!useChatServer((s) => s.hydrated)) return null
+  if (chat !== 'unsupported' && !chatServer) return <Navigate to={roomHref(SERVER_ROOM)} replace />
+  return <ChatServerIndex />
+}
 
 function sendErrorText(e: unknown): string {
   if (e instanceof SubsonicError) {
@@ -339,16 +363,23 @@ function sendErrorText(e: unknown): string {
   return 'Your message wasn’t sent. Try again.'
 }
 
-function Composer() {
+interface ComposerProps {
+  /** Resolves once the message is accepted (or queued); throws to keep the draft and show `errorText`. */
+  onSend: (text: string) => Promise<void>
+  maxLength: number
+  label: string
+  errorText?: (e: unknown) => string
+}
+
+export function Composer({ onSend, maxLength, label, errorText = sendErrorText }: ComposerProps) {
   const location = useLocation()
   const [draft, setDraft] = useState(() => (location.state as { draft?: unknown } | null)?.draft?.toString() ?? '')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
-  const send = useSocial((s) => s.sendChat)
   const field = useRef<HTMLTextAreaElement>(null)
   const id = useId()
   const text = draft.trim()
-  const left = MAX_MESSAGE - draft.length
+  const left = maxLength - draft.length
 
   // Arriving with a mention ("Mention in server chat"): focus the field with the caret after it.
   const mention = useRef(draft !== '')
@@ -365,10 +396,10 @@ function Composer() {
     setSending(true)
     setError('')
     try {
-      await send(text)
+      await onSend(text)
       setDraft('')
     } catch (err) {
-      setError(sendErrorText(err)) // the draft stays, so nothing typed is lost
+      setError(errorText(err)) // the draft stays, so nothing typed is lost
     } finally {
       setSending(false)
       field.current?.focus()
@@ -378,14 +409,14 @@ function Composer() {
   return (
     <form className="composer" onSubmit={(e) => void submit(e)}>
       <label className="sr-only" htmlFor={`${id}-text`}>
-        Message everyone on this server
+        {label}
       </label>
       <textarea
         id={`${id}-text`}
         ref={field}
         className="composer__field"
         rows={1}
-        maxLength={MAX_MESSAGE}
+        maxLength={maxLength}
         enterKeyHint="send"
         placeholder="Write a message"
         value={draft}
@@ -416,14 +447,30 @@ function Composer() {
   )
 }
 
-function MessageLog({ messages, me }: { messages: ChatMessage[]; me: string | undefined }) {
+export interface LogItem {
+  key: string
+  mine: boolean
+  /** Shown for others' messages; yours say "You". */
+  who: string
+  whoHref?: string
+  time: number
+  text: string
+  /** Extra classes on the bubble's <li> (pending, failed, deleted). */
+  className?: string
+  /** Under the text: delivery state, Retry… */
+  footer?: ReactNode
+  /** In the name/time row, e.g. Delete. */
+  action?: ReactNode
+}
+
+export function MessageLog({ items, before }: { items: LogItem[]; before?: ReactNode }) {
   const log = useRef<HTMLDivElement>(null)
   const atEnd = useRef(true)
   // Follow new messages only while the reader is at the end; scrolling up to read stays put.
   useLayoutEffect(() => {
     const el = log.current
     if (el && atEnd.current) el.scrollTop = el.scrollHeight
-  }, [messages])
+  }, [items])
   return (
     <div
       ref={log}
@@ -436,30 +483,41 @@ function MessageLog({ messages, me }: { messages: ChatMessage[]; me: string | un
         atEnd.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
       }}
     >
+      {before}
       <ol className="thread__msgs">
-      {messages.map((m) => {
-        const mine = sameUser(m.username, me)
-        return (
-          <li key={`${m.time}|${m.username}|${m.message}`} className={mine ? 'msg msg--mine' : 'msg'}>
-            {!mine && <Avatar name={m.username} />}
+      {items.map((m) => (
+          <li key={m.key} className={['msg', m.mine && 'msg--mine', m.className].filter(Boolean).join(' ')}>
+            {!m.mine && <Avatar name={m.who} />}
             <div className="msg__body">
               <p className="msg__meta">
-                {mine ? (
+                {m.mine ? (
                   <span className="msg__who">You</span>
-                ) : (
-                  <Link className="msg__who" to={profileHref(m.username)}>
-                    {m.username}
+                ) : m.whoHref ? (
+                  <Link className="msg__who" to={m.whoHref}>
+                    {m.who}
                   </Link>
+                ) : (
+                  <span className="msg__who">{m.who}</span>
                 )}
                 <time dateTime={new Date(m.time).toISOString()}>{formatMessageTime(m.time)}</time>
+                {m.action}
               </p>
-              <p className="msg__text">{m.message}</p>
+              <p className="msg__text">{m.text}</p>
+              {m.footer}
             </div>
           </li>
-        )
-      })}
+      ))}
       </ol>
     </div>
+  )
+}
+
+/** Narrow windows show one pane at a time (global.css); this leads from a thread back to the conversation list. */
+export function ThreadBack() {
+  return (
+    <Link to="/social/chat" className="icon-btn thread__back" aria-label="All conversations" title="All conversations">
+      <Icon name="back" size={22} />
+    </Link>
   )
 }
 
@@ -471,8 +529,10 @@ export function ChatThread() {
   const messages = useSocial((s) => s.messages)
   const markRead = useSocial((s) => s.markRead)
   const refresh = useSocial((s) => s.refreshChat)
+  const send = useSocial((s) => s.sendChat)
   const me = useMe()
   const host = useHost()
+  const chatServer = useChatServerSignedIn()
 
   // Reading the open conversation clears its unread count (only while the window is actually visible).
   useEffect(() => {
@@ -480,10 +540,17 @@ export function ChatThread() {
   }, [messages, markRead])
 
   if (room !== SERVER_ROOM) return <Navigate to="/social/chat" replace />
-  if (chat === 'unsupported') return <ChatUnavailable />
+  if (chat === 'unsupported') return chatServer ? <Navigate to="/social/chat" replace /> : <ChatUnavailable />
   const loading = chat === 'unknown' || chat === 'loading'
   return (
     <section className="thread" aria-label={`Chat with everyone on ${host}`}>
+      {/* Alone, the room is all there is (ChatIndex opens it); next to chat server conversations it needs a way back. */}
+      {chatServer && !isMobileApp() && (
+        <header className="thread__head thread__head--narrow">
+          <ThreadBack />
+          <h2 className="thread__title">Everyone on {host}</h2>
+        </header>
+      )}
       {loading ? (
         <p className="thread__status" role="status">
           Loading messages…
@@ -491,7 +558,16 @@ export function ChatThread() {
       ) : chat === 'error' && !messages.length ? (
         <FailureState error={chatError} onRetry={() => void refresh()} />
       ) : messages.length ? (
-        <MessageLog messages={messages} me={me} />
+        <MessageLog
+          items={messages.map((m) => ({
+            key: `${m.time}|${m.username}|${m.message}`,
+            mine: sameUser(m.username, me),
+            who: m.username,
+            whoHref: profileHref(m.username),
+            time: m.time,
+            text: m.message,
+          }))}
+        />
       ) : (
         <EmptyState title="No messages yet" hint="Say hello. Everyone signed in to your server can read what you post here." />
       )}
@@ -503,7 +579,7 @@ export function ChatThread() {
           </button>
         </p>
       )}
-      {!loading && !(chat === 'error' && !messages.length) && <Composer />}
+      {!loading && !(chat === 'error' && !messages.length) && <Composer onSend={send} maxLength={MAX_MESSAGE} label="Message everyone on this server" />}
     </section>
   )
 }

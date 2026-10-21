@@ -250,7 +250,7 @@ function SyncedLines({ lines: source, footer }: { lines: LyricLine[]; footer: Re
         </ol>
       </div>
       {!follow && active >= 0 && (
-        <button type="button" className="lyrics-resume glass-overlay" onClick={() => setFollowing(true)}>
+        <button type="button" className="lyrics-resume surface-overlay" onClick={() => setFollowing(true)}>
           Back to current line
         </button>
       )}

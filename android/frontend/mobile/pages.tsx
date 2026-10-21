@@ -5,6 +5,7 @@ import { Boundary, Cover, useAlbumSongs } from '@auralis/ui/features/library/com
 import { useLibraryQuery, usePagedQuery } from '@auralis/ui/features/library/queries'
 import { useUnread } from '@auralis/ui/features/social/data'
 import { Badge, ChatThread, Profile, SocialTabs } from '@auralis/ui/features/social/Social'
+import { ConversationThread, useConversationTitle } from '@auralis/ui/features/social/ChatServer'
 import { formatDuration } from '@auralis/ui/lib/format'
 import { useAuth } from '@auralis/ui/state/auth'
 import { Icon } from '@auralis/ui/ui/Icon'
@@ -457,6 +458,21 @@ export function SocialThreadPage() {
         <h1 className="m-h1">Server chat</h1>
       </header>
       <ChatThread />
+    </div>
+  )
+}
+
+/** A chat server conversation: its title in the header, the thread below. */
+export function ChatServerThreadPage() {
+  const { conversationId } = useParams()
+  const title = useConversationTitle(conversationId)
+  return (
+    <div className="m-page social social--thread">
+      <header className="m-top">
+        <BackButton />
+        <h1 className="m-h1">{title}</h1>
+      </header>
+      <ConversationThread compact />
     </div>
   )
 }

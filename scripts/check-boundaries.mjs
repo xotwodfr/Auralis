@@ -8,8 +8,10 @@ const repo = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
 // A directory's own files are always fine; this lists what else it may import from.
 const ALLOWED = {
-  'shared/ui': [],
+  'shared/ui': ['shared/chat-protocol'],
+  'shared/chat-protocol': [],
   server: [],
+  'server/chat': ['shared/chat-protocol'],
   web: ['shared/ui', 'server'],
   tauri: ['shared/ui', 'server'],
   android: ['shared/ui', 'server'],
@@ -25,11 +27,15 @@ const walk = (dir) =>
     return statSync(p).isDirectory() ? walk(p) : SOURCE.test(f) ? [p] : []
   })
 
-const owner = (abs) => Object.keys(ALLOWED).find((d) => abs === join(repo, d) || abs.startsWith(join(repo, d) + sep))
+// Longest match wins: server/chat is its own package, not part of server.
+const owner = (abs) =>
+  Object.keys(ALLOWED)
+    .filter((d) => abs === join(repo, d) || abs.startsWith(join(repo, d) + sep))
+    .sort((a, b) => b.length - a.length)[0]
 
 const violations = []
 for (const [dir, allowed] of Object.entries(ALLOWED)) {
-  for (const file of walk(join(repo, dir))) {
+  for (const file of walk(join(repo, dir)).filter((f) => owner(f) === dir)) {
     for (const [, spec] of readFileSync(file, 'utf8').matchAll(IMPORT)) {
       // `@auralis/ui/...` is the alias for shared/ui/src; relative imports are resolved; other bare imports are packages.
       const target = spec.startsWith('@auralis/ui') ? join(repo, 'shared/ui') : spec.startsWith('.') ? resolve(dirname(file), spec) : null

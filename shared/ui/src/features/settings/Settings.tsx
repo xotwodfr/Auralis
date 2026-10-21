@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { clearLyricsCache } from '../../api/lyrics/cache'
 import { clearSpotifyMatches } from '../../api/lyrics/resolve'
 import { ServerCheckError, probeLyricsServer, useLyricsBackend } from '../lyrics/useLyricsBackend'
@@ -14,6 +14,7 @@ import { useSpotifyLinks } from '../../state/spotifyLinks'
 import { toast } from '../../state/toast'
 import { ConfirmDialog } from '../../ui/Dialog'
 import { SegmentedControl } from '../../ui/SegmentedControl'
+import { ChatServerSection } from './ChatServerSection'
 
 /** A mini window painted by the theme's own tokens (the `data-theme` attribute scopes them to this element). */
 function Swatch({ theme, style }: { theme: string; style?: Record<string, string> }) {
@@ -150,6 +151,18 @@ export function useAccountActions() {
   return { setPending, confirmDialog }
 }
 
+/** A collapsible settings group; native <details> keeps it keyboard-accessible with no state. */
+function Section({ id, title, defaultOpen, children }: { id: string; title: string; defaultOpen?: boolean; children: ReactNode }) {
+  return (
+    <details className="panel fold" open={defaultOpen}>
+      <summary className="fold__summary">
+        <h2 id={id} className="panel__title">{title}</h2>
+      </summary>
+      <div className="fold__body" role="region" aria-labelledby={id}>{children}</div>
+    </details>
+  )
+}
+
 export default function Settings() {
   const session = useAuth((s) => s.session)
   const external = useSettings((s) => s.externalLookups)
@@ -183,10 +196,7 @@ export default function Settings() {
     <section className="page">
       <h1 className="page__title">Settings</h1>
 
-      {!isMobileApp() && <section className="panel" aria-labelledby="appearance">
-        <h2 id="appearance" className="panel__title">
-          Appearance
-        </h2>
+      {!isMobileApp() && <Section id="appearance" title="Appearance" defaultOpen>
         <SegmentedControl
           variant="cards"
           label="Theme"
@@ -212,12 +222,9 @@ export default function Settings() {
             Colours follow the cover of the playing track. If your server blocks cross-origin image reads, the default palette is used.
           </p>
         )}
-      </section>}
+      </Section>}
 
-      <section className="panel" aria-labelledby="connection">
-        <h2 id="connection" className="panel__title">
-          Connection
-        </h2>
+      <Section id="connection" title="Connection" defaultOpen>
         <dl className="rows">
           {rows.map(([label, value]) => (
             <div className="rows__row" key={label}>
@@ -236,12 +243,13 @@ export default function Settings() {
             Disconnect
           </button>
         </div>
-      </section>
+      </Section>
 
-      <section className="panel" aria-labelledby="playback-settings">
-        <h2 id="playback-settings" className="panel__title">
-          Playback
-        </h2>
+      <Section id="chat-server" title="Chat server">
+        <ChatServerSection />
+      </Section>
+
+      <Section id="playback-settings" title="Playback">
         <label className="check">
           <input type="checkbox" checked={reportPlays} onChange={(e) => setReportPlays(e.target.checked)} />
           <span>Report plays to your server</span>
@@ -258,12 +266,9 @@ export default function Settings() {
           Tell your server which track you start. Everyone signed in to the same server can then see it, in Social and in other
           apps. Off unless you turn it on.
         </p>
-      </section>
+      </Section>
 
-      <section className="panel" aria-labelledby="lyrics-settings">
-        <h2 id="lyrics-settings" className="panel__title">
-          Lyrics
-        </h2>
+      <Section id="lyrics-settings" title="Lyrics">
         <label className="check">
           <input type="checkbox" checked={external} onChange={(e) => setExternal(e.target.checked)} />
           <span>External lookups</span>
@@ -297,12 +302,9 @@ export default function Settings() {
             Remove Spotify links
           </button>
         </div>
-      </section>
+      </Section>
 
-      {!isMobileApp() && <section className="panel" aria-labelledby="shortcuts">
-        <h2 id="shortcuts" className="panel__title">
-          Keyboard shortcuts
-        </h2>
+      {!isMobileApp() && <Section id="shortcuts" title="Keyboard shortcuts">
         <dl className="rows">
           {SHORTCUTS.map((s) => (
             <div className="rows__row" key={s.keys}>
@@ -313,7 +315,7 @@ export default function Settings() {
             </div>
           ))}
         </dl>
-      </section>}
+      </Section>}
 
       {confirmDialog}
     </section>

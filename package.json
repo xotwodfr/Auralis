@@ -1,7 +1,7 @@
 {
   "name": "auralis",
   "private": true,
-  "version": "0.2.7",
+  "version": "0.3.0",
   "type": "module",
   "workspaces": [
     "shared/ui",
@@ -17,13 +17,16 @@
     "dev:android": "npm run tauri -w @auralis/android -- android dev",
     "build": "npm run build:web",
     "build:web": "npm run build -w @auralis/web",
+    "deploy:web": "bash scripts/deploy-web.sh",
     "build:tauri": "npm run tauri -w @auralis/tauri -- build",
     "build:android": "npm run tauri -w @auralis/android -- android build --apk --target aarch64",
     "start": "npm start -w @auralis/server",
     "test": "npm test --workspaces --if-present",
     "test:e2e": "npm run test:e2e --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "eslint . && node scripts/check-boundaries.mjs"
+    "lint": "eslint . && node scripts/check-boundaries.mjs",
+    "test:chat": "npm --prefix server/chat test",
+    "typecheck:chat": "npm --prefix server/chat run typecheck"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

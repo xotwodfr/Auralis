@@ -135,7 +135,7 @@ export default function Player() {
           </div>
           <div className="m-lyricsfull__body">
             <LyricsView key={track.id} track={lyricsTrack} />
-            <KaraokeButton className="m-round m-round--glass" size={22} />
+            <KaraokeButton className="m-round m-round--tonal" size={22} />
           </div>
         </div>
         {menuOpen && <TrackActions song={track} index={s.queue.index} starred={isStarred(ids, 'song', track.id)} onClose={() => setMenuOpen(false)} />}
@@ -242,7 +242,7 @@ export default function Player() {
               key={track.id}
               track={{ id: track.id, title: track.title, artist: track.artist, album: track.album, duration: track.duration, isrc: track.isrc, explicit: track.explicit }}
             />
-            <KaraokeButton className="m-round m-round--glass" size={22} />
+            <KaraokeButton className="m-round m-round--tonal" size={22} />
           </div>
           <footer className="m-lyricsfull__foot">
             <KaraokeIntensity />

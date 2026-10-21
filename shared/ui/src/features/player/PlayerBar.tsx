@@ -62,7 +62,7 @@ export default function PlayerBar() {
   const status = s.error ? null : s.status === 'loading' ? 'Loading…' : s.status === 'buffering' ? 'Buffering…' : null
 
   return (
-    <section className="player glass-nav" aria-label="Player">
+    <section className="player" aria-label="Player">
       <NavLink to="/now-playing" className="player__track" aria-label={track ? `Now playing: ${track.title}` : 'Now Playing'}>
         <div className="player__art">
           <Cover id={track?.coverArt} size={112} />

@@ -1,6 +1,6 @@
 [package]
 name = "auralis-android"
-version = "0.2.7"
+version = "0.3.0"
 edition = "2021"
 description = "Auralis Android app: the phone UI in a native webview (Tauri 2 mobile)"
 

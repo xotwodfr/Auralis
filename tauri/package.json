@@ -1,7 +1,7 @@
 {
   "name": "@auralis/tauri",
   "private": true,
-  "version": "0.2.7",
+  "version": "0.3.0",
   "type": "module",
   "description": "Auralis desktop (Linux, Windows): Tauri 2 shell (Rust, this directory) around its own build of the shared app core (frontend/).",
   "scripts": {

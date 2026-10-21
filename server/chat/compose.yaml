@@ -1,0 +1,82 @@
+# Auralis chat server: PostgreSQL + one-shot migration + app. Separate Compose project from the lyrics backend
+# (root docker-compose.yml), so `docker compose down` here never touches it. See README.md and CHAT.md §8.
+name: auralis-chat
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chat
+      POSTGRES_USER: chat
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    # PostgreSQL 18 images keep data under /var/lib/postgresql/18/docker (VOLUME /var/lib/postgresql); mounting the
+    # old .../data path would leave the real data in an anonymous volume that is lost on recreate.
+    volumes: [db-data:/var/lib/postgresql]
+    networks: [internal]
+    # No `ports:`, ever: the database is reachable only from this project's internal network.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat -d chat"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    stop_grace_period: 30s
+    shm_size: 128mb
+
+  migrate:
+    image: auralis-chat:${CHAT_VERSION:-local}
+    build: .
+    command: ["node", "src/migrate.ts"]
+    env_file: .env
+    environment: &db-env
+      DATABASE_HOST: db
+      DATABASE_NAME: chat
+      DATABASE_USER: chat
+      DATABASE_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    networks: [internal]
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  chat:
+    image: auralis-chat:${CHAT_VERSION:-local}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: *db-env
+      # Inside the container the app always listens on 0.0.0.0:8790; CHAT_BIND_ADDRESS/CHAT_PORT choose the host side.
+      CHAT_LISTEN_HOST: 0.0.0.0
+      CHAT_PORT: "8790"
+    secrets: [db_password]
+    networks: [internal, edge]
+    ports: ["${CHAT_BIND_ADDRESS:-127.0.0.1}:${CHAT_PORT:-8790}:8790"]
+    # Lets CHAT_NAVIDROME_URL=http://host.docker.internal:4533 reach a Navidrome running on the same host.
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    init: true # tini as PID 1: signals reach node, zombies are reaped
+    stop_grace_period: 20s
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      driver: local
+      options: { max-size: "10m", max-file: "5" }
+
+networks:
+  internal: { internal: true } # db + app only; no route out
+  edge: {} # the app's published port
+
+volumes:
+  db-data: {}
+
+secrets:
+  db_password:
+    file: ./secrets/db_password

@@ -1,7 +1,7 @@
 {
   "name": "@auralis/web",
   "private": true,
-  "version": "0.2.7",
+  "version": "0.3.0",
   "type": "module",
   "description": "The Auralis web app: entry point, Vite build, dev-server lyrics bridge and Playwright e2e.",
   "scripts": {

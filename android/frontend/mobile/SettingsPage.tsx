@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { LyricsServerForm, spicyText, useAccountActions } from '@auralis/ui/features/settings/Settings'
+import { ChatServerSection } from '@auralis/ui/features/settings/ChatServerSection'
 import { useLyricsBackend } from '@auralis/ui/features/lyrics/useLyricsBackend'
 import { useAuth } from '@auralis/ui/state/auth'
 import { MAX_CROSSFADE_S, useSettings, type LyricSize, type StreamQuality } from '@auralis/ui/state/settings'
@@ -158,6 +159,12 @@ export default function SettingsPage() {
         </Row>
         {remember && <Row icon="clock" label="Clear stored credentials" onClick={() => setPending('credentials')} />}
         <Row icon="back" label="Disconnect" danger onClick={() => setPending('disconnect')} />
+      </Group>
+
+      <Group title="Chat server">
+        <div className="m-set__block m-set__form">
+          <ChatServerSection />
+        </div>
       </Group>
 
       <Group title="Storage">

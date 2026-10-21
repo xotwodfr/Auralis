@@ -77,6 +77,7 @@ test('"now playing" stays private until shared; the play-count preference stops 
   await bar.getByRole('button', { name: 'Pause' }).click()
 
   await page.getByRole('link', { name: 'Settings', exact: true }).click()
+  await page.getByRole('heading', { name: 'Playback' }).click()
   await page.getByLabel('Share what I’m playing').check()
   await page.getByRole('link', { name: 'Albums', exact: true }).click()
   await page.getByRole('link', { name: /First Album/ }).click()
@@ -86,6 +87,7 @@ test('"now playing" stays private until shared; the play-count preference stops 
   // Stop first: the running track would otherwise submit its own play while the baseline is read.
   await bar.getByRole('button', { name: 'Pause' }).click()
   await page.getByRole('link', { name: 'Settings', exact: true }).click()
+  await page.getByRole('heading', { name: 'Playback' }).click()
   const toggle = page.getByLabel('Report plays to your server')
   await expect(toggle).toBeChecked()
   await toggle.uncheck()

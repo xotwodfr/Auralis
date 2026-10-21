@@ -1,5 +1,7 @@
 # Lyrics backend
 
+> The chat server is a separate service with its own runbook: [`server/chat/README.md`](../server/chat/README.md).
+
 `server/` is a dependency-free Node service (Node 20.12+). `server/index.mjs` serves the built web app *and* `/api/spicy/*`; the Docker image runs the same file with no `web/dist/`, so it serves only the API.
 
 What it does, from the source: three fixed GET routes (`/api/spicy/health`, `/lyrics/<22-char Spotify id>`, `/match?title&artist&isrc`), a server-held Spicy Lyrics key and Spotify client credentials, 8 s upstream timeout, 2 MB cap, per-client rate limit (default 30/min), bounded in-memory cache, same-origin-only unless `AURALIS_ALLOWED_ORIGINS`. Auralis web falls back to server lyrics and LRCLIB when the backend is absent or unconfigured.

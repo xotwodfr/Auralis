@@ -1,7 +1,7 @@
 {
   "name": "@auralis/android",
   "private": true,
-  "version": "0.2.7",
+  "version": "0.3.0",
   "type": "module",
   "description": "Auralis Android app: Tauri 2 mobile shell (Rust + the Gradle project in gen/android) around the phone UI in frontend/.",
   "scripts": {

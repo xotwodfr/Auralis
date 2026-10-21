@@ -35,7 +35,7 @@ test('reduced motion removes transitions and the theme ease', async ({ page }) =
   expect(await page.locator('html').evaluate((el) => el.classList.contains('theme-changing'))).toBe(false)
 })
 
-test('increased contrast turns glass surfaces opaque', async ({ page }) => {
+test('increased contrast keeps surfaces opaque', async ({ page }) => {
   await page.emulateMedia({ contrast: 'more' })
   await signIn(page)
   const bg = await page.locator('.toolbar').evaluate((el) => ({ color: getComputedStyle(el).backgroundColor, blur: getComputedStyle(el).backdropFilter }))
@@ -43,11 +43,11 @@ test('increased contrast turns glass surfaces opaque', async ({ page }) => {
   expect(bg.blur).toBe('none')
 })
 
-test('translucent glass is used by default', async ({ page }) => {
+test('the top app bar is an opaque Material 3 surface by default', async ({ page }) => {
   await signIn(page)
   const bg = await page.locator('.toolbar').evaluate((el) => ({ color: getComputedStyle(el).backgroundColor, blur: getComputedStyle(el).backdropFilter }))
-  expect(bg.color).toMatch(/rgba|\/ 0\./)
-  expect(bg.blur).toContain('blur')
+  expect(bg.color).not.toMatch(/rgba|, 0\.\d+\)/)
+  expect(bg.blur).toBe('none')
 })
 
 test('long titles and narrow widths do not overflow the player', async ({ page }) => {

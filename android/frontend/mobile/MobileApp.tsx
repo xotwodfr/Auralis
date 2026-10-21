@@ -8,9 +8,9 @@ import { Icon, type IconName } from '@auralis/ui/ui/Icon'
 import MiniPlayer from './MiniPlayer'
 import Player from './Player'
 import { Backdrop } from './parts'
-import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage, SocialPage, SocialProfilePage, SocialThreadPage } from './pages'
+import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage, SocialPage, SocialProfilePage, SocialThreadPage, ChatServerThreadPage } from './pages'
 import { Activity, ConversationList, People } from '@auralis/ui/features/social/Social'
-import { CHAT_POLL_BACKGROUND_MS, useChatPolling } from '@auralis/ui/features/social/data'
+import { CHAT_POLL_BACKGROUND_MS, useChatConnection, useChatPolling } from '@auralis/ui/features/social/data'
 import SettingsPage from './SettingsPage'
 
 const TABS: { to: string; label: string; icon: IconName; match: (path: string) => boolean }[] = [
@@ -29,6 +29,7 @@ function useLyricSize() {
 
 function Shell() {
   useChatPolling(CHAT_POLL_BACKGROUND_MS)
+  useChatConnection()
   const { pathname } = useLocation()
   // Braces matter: newer Chromium returns a Promise from scrollTo, which React would take for a cleanup.
   useEffect(() => {
@@ -99,6 +100,7 @@ function SignedIn() {
           </Route>
           <Route path="/social/people/:name" element={<SocialProfilePage />} />
           <Route path="/social/chat/:room" element={<SocialThreadPage />} />
+          <Route path="/social/chat/c/:conversationId" element={<ChatServerThreadPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>

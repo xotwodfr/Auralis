@@ -1,0 +1,676 @@
+/* Material 3 layer (MATERIA3.md). Loaded after global.css: re-skins the shared primitives and the web shell with M3
+   shape, tonal surfaces, state layers and motion. Colours are derived from each theme's own tokens with color-mix, so
+   every preset (and the artwork palette) gets an M3 scheme without new per-theme values. */
+
+:root,
+[data-theme] {
+  /* Tonal surfaces and containers, derived from the theme's neutrals and accent */
+  --md-surface-low: color-mix(in oklab, var(--surface) 70%, var(--bg));
+  --md-surface: color-mix(in oklab, var(--surface), var(--accent) 3%);
+  --md-surface-high: color-mix(in oklab, var(--surface), var(--accent) 6%);
+  --md-surface-highest: color-mix(in oklab, var(--surface), var(--accent) 10%);
+  --md-secondary-container: color-mix(in oklab, var(--accent) 22%, var(--surface));
+  --md-on-secondary-container: var(--text);
+  --md-outline: color-mix(in oklab, var(--text) 38%, transparent);
+  --md-outline-variant: color-mix(in oklab, var(--text) 14%, transparent);
+  --md-inverse-surface: var(--text);
+  --md-inverse-on-surface: var(--bg);
+
+  /* State layers (M3: hover 8%, focus 10%, pressed 10%) */
+  --md-hover: color-mix(in oklab, var(--text) 8%, transparent);
+  --md-press: color-mix(in oklab, var(--text) 12%, transparent);
+
+  /* Shape scale */
+  --r-chip: 8px;
+  --r-thumb: 12px;
+  --r-card: 16px;
+  --r-panel: 16px;
+  --r-hero: 28px;
+  --r-sheet: 28px;
+
+  /* Elevation: M3 leans on tonal surfaces, shadows stay soft */
+  --sh-card: none;
+  --sh-panel: none;
+  --md-elev-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-elev-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-elev-3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* Motion tokens */
+  --md-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-emphasized-decel: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-emphasized-accel: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --md-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-short: 150ms;
+  --md-medium: 300ms;
+  --md-long: 450ms;
+  --ease-spring: var(--md-emphasized);
+  --ease-out-quart: var(--md-standard);
+
+  --font: 'Roboto Flex Variable', Roboto, 'Google Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+body {
+  letter-spacing: 0.01em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Type scale */
+.page__title {
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.panel__title {
+  font-size: 1.375rem;
+  font-weight: 400;
+}
+
+.card__title,
+.row__title {
+  font-weight: 500;
+}
+
+/* Ripple (app/ripple.ts adds the span) */
+.md-ripple-host {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.md-ripple {
+  position: absolute;
+  z-index: -1;
+  width: var(--d);
+  height: var(--d);
+  margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+  background: currentColor;
+  border-radius: 50%;
+  opacity: 0.12;
+  pointer-events: none;
+  animation: md-ripple var(--md-long) var(--md-emphasized-decel) forwards;
+}
+
+@keyframes md-ripple {
+  from {
+    transform: scale(0);
+  }
+  60% {
+    opacity: 0.12;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Buttons: outlined by default, filled for primary/danger. The press-scale is replaced by state layers. */
+.btn {
+  min-height: 40px;
+  padding: 0 24px;
+  color: var(--accent-link);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  background: transparent;
+  border: 1px solid var(--md-outline);
+  transition: background-color var(--md-short) var(--md-standard), box-shadow var(--md-short) var(--md-standard);
+}
+
+.btn:hover:not(:disabled) {
+  opacity: 1;
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+
+.btn:active:not(:disabled),
+.icon-btn:active:not(:disabled),
+.segmented__item:active,
+.navitem:active {
+  transform: none;
+}
+
+.btn--primary,
+.btn--danger {
+  color: #fff;
+  border-color: transparent;
+}
+
+.btn--primary {
+  background: var(--accent-fill);
+}
+
+.btn--danger {
+  background: var(--danger-fill);
+}
+
+.btn--primary:hover:not(:disabled),
+.btn--danger:hover:not(:disabled) {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08));
+  box-shadow: var(--md-elev-1);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background-color: var(--accent-fill);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background-color: var(--danger-fill);
+}
+
+.btn:disabled {
+  opacity: 0.38;
+}
+
+.icon-btn {
+  transition: background-color var(--md-short) var(--md-standard), color var(--md-short) var(--md-standard);
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--md-hover);
+}
+
+.icon-btn[aria-pressed='true'] {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+/* The main play button is a filled icon button */
+.icon-btn--main {
+  color: #fff;
+  background: var(--accent-fill);
+}
+
+.icon-btn--main:hover:not(:disabled) {
+  color: #fff;
+  background: var(--accent-fill);
+  box-shadow: var(--md-elev-1);
+}
+
+.icon-btn--main[aria-busy='true']::after {
+  border-top-color: var(--accent);
+}
+
+/* Text fields: outlined */
+.field input,
+.searchbox input {
+  transition: border-color var(--md-short) var(--md-standard), box-shadow var(--md-short) var(--md-standard);
+}
+
+.field input {
+  min-height: 56px;
+  padding: 0 16px;
+  background: transparent;
+  border: 1px solid var(--md-outline);
+  border-radius: 4px;
+}
+
+.field input:hover:not(:disabled) {
+  border-color: var(--text);
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+}
+
+/* Cards and panels: filled cards on tonal surfaces */
+.panel {
+  background: var(--md-surface);
+  border: 0;
+  box-shadow: none;
+}
+
+.card .artwork {
+  border-radius: var(--r-thumb);
+  transition: box-shadow var(--md-medium) var(--md-standard);
+}
+
+.card:hover .artwork {
+  box-shadow: var(--md-elev-2);
+}
+
+.card__play,
+.card__actions .icon-btn {
+  border-radius: var(--r-card);
+}
+
+.card__actions {
+  transform: translateY(4px);
+  transition: opacity var(--md-short) var(--md-standard), transform var(--md-medium) var(--md-emphasized-decel);
+}
+
+.card:hover .card__actions,
+.card__actions:focus-within {
+  transform: none;
+}
+
+.chip {
+  min-height: 32px;
+  padding: 0 16px;
+  color: var(--text-body);
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--r-chip);
+  transition: background-color var(--md-short) var(--md-standard);
+}
+
+.chip:hover:not(:disabled) {
+  background: var(--md-hover);
+}
+
+.chip[aria-pressed='true'] {
+  color: var(--md-on-secondary-container);
+  background: var(--md-secondary-container);
+  border-color: transparent;
+}
+
+/* Segmented buttons */
+.segmented {
+  gap: 0;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--md-outline);
+  overflow: hidden;
+}
+
+.segmented__item {
+  min-height: 40px;
+  border-radius: 0;
+  font-weight: 500;
+}
+
+.segmented__item + .segmented__item {
+  border-left: 1px solid var(--md-outline);
+}
+
+.segmented__item[aria-checked='true'] {
+  color: var(--md-on-secondary-container);
+  background: var(--md-secondary-container);
+  box-shadow: none;
+}
+
+.segmented--cards {
+  border: 0;
+  overflow: visible;
+}
+
+.segmented--cards .segmented__item {
+  background: var(--md-surface-low);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--r-thumb);
+}
+
+.segmented--cards .segmented__item + .segmented__item {
+  border-left: 1px solid var(--md-outline-variant);
+}
+
+.segmented--cards .segmented__item[aria-checked='true'] {
+  background: var(--md-secondary-container);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Sliders: 4px track, primary fill, 20px handle that grows while dragged */
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(to right, var(--slider-fill, var(--accent)) var(--fill), var(--md-surface-highest) var(--fill));
+}
+
+.slider::-moz-range-track {
+  background: var(--md-surface-highest);
+}
+
+.slider::-moz-range-progress {
+  background: var(--slider-fill, var(--accent));
+}
+
+.slider::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  background: var(--slider-fill, var(--accent));
+  border: 0;
+  box-shadow: none;
+  transition: transform var(--md-short) var(--md-standard), box-shadow var(--md-short) var(--md-standard);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--slider-fill, var(--accent));
+  border: 0;
+}
+
+.slider:hover:not(:disabled)::-webkit-slider-thumb {
+  box-shadow: 0 0 0 10px var(--md-hover);
+}
+
+.slider:active:not(:disabled)::-webkit-slider-thumb {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 10px var(--md-press);
+}
+
+/* Dialogs, sheets and snackbars: solid tonal surfaces, no glass */
+.surface-overlay {
+  background: var(--md-surface-high);
+  border-radius: var(--r-panel);
+  box-shadow: var(--md-elev-3);
+  transition: opacity var(--md-medium) var(--md-emphasized-decel), transform var(--md-medium) var(--md-emphasized-decel);
+}
+
+@starting-style {
+  .surface-overlay {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.scrim {
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.dialog {
+  width: min(560px, 100%);
+  min-width: min(280px, 100%);
+  padding: 24px;
+  border-radius: var(--r-hero);
+  transition: opacity var(--md-medium) var(--md-emphasized-decel), transform var(--md-medium) var(--md-emphasized-decel);
+}
+
+@starting-style {
+  .dialog {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.92);
+  }
+}
+
+.dialog__title {
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.toast {
+  min-height: 48px;
+  padding: 4px 8px 4px 16px;
+  color: var(--md-inverse-on-surface);
+  background: var(--md-inverse-surface);
+  border-radius: 4px;
+  transition: opacity var(--md-medium) var(--md-emphasized-decel), transform var(--md-medium) var(--md-emphasized-decel);
+}
+
+.toast .icon-btn {
+  color: var(--md-inverse-on-surface);
+}
+
+.toast--error {
+  color: var(--md-inverse-on-surface);
+  background: var(--danger-fill);
+}
+
+@starting-style {
+  .toast {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+kbd {
+  background: var(--md-surface-highest);
+  border: 0;
+}
+
+/* Shell: navigation drawer, top app bar, floating player */
+.sidebar {
+  padding: 12px;
+  background: var(--md-surface-low);
+  border-right: 0;
+  --nav-hover: var(--md-hover);
+  --nav-active: var(--md-secondary-container);
+}
+
+.sidebar__grouptitle {
+  padding-left: 16px;
+}
+
+.navitem {
+  min-height: 56px;
+  padding: 0 16px;
+  color: var(--text-2);
+  font-weight: 500;
+  border-radius: var(--r-pill);
+  transition: background-color var(--md-short) var(--md-standard), color var(--md-short) var(--md-standard);
+}
+
+.navitem[aria-current='page'] {
+  color: var(--md-on-secondary-container);
+  font-weight: 600;
+  background: var(--md-secondary-container);
+  animation: md-indicator var(--md-medium) var(--md-emphasized-decel);
+}
+
+.navitem[aria-current='page']::before {
+  content: none;
+}
+
+.navitem[aria-current='page'] svg {
+  color: inherit;
+}
+
+@keyframes md-indicator {
+  from {
+    background-color: transparent;
+    clip-path: inset(0 50% round var(--r-pill));
+  }
+  to {
+    clip-path: inset(0 0 round var(--r-pill));
+  }
+}
+
+.toolbar {
+  background: var(--bg);
+}
+
+.searchbox input {
+  min-height: 48px;
+  padding: 0 20px;
+  background: var(--md-surface-high);
+  border: 0;
+}
+
+.searchbox input:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.app {
+  --player-h: 96px;
+}
+
+.player,
+.surface-overlay,
+.navitem[aria-current='page'],
+.segmented__item[aria-checked='true'],
+.chip[aria-pressed='true'] {
+  /* Secondary text on tonal containers: the plain --text-2 drops below AA on the darker tones. */
+  --text-2: var(--text-body);
+}
+
+.player {
+  right: 12px;
+  bottom: 12px;
+  left: calc(var(--sidebar-w) + 12px);
+  min-height: 80px;
+  background: var(--md-surface-highest);
+  border: 0;
+  border-radius: var(--r-hero);
+  box-shadow: var(--md-elev-2);
+}
+
+.content {
+  padding-bottom: calc(var(--player-h) + 48px);
+}
+
+/* Page transition: M3 "fade through" whenever the route remounts. No fill mode: a lingering transform would make the
+   page the containing block of its fixed panels (queue, effects). */
+.content > * {
+  animation: md-fade-through var(--md-medium) var(--md-emphasized-decel);
+}
+
+@keyframes md-fade-through {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Settings sections as M3 expansion lists */
+.fold__summary {
+  min-height: 64px;
+  border-radius: var(--r-panel);
+  transition: background-color var(--md-short) var(--md-standard);
+}
+
+.fold__summary:hover {
+  background: var(--md-hover);
+}
+
+.fold__summary::after {
+  transition: transform var(--md-medium) var(--md-emphasized);
+}
+
+.fold[open] > .fold__body {
+  animation: md-expand var(--md-medium) var(--md-emphasized-decel);
+}
+
+@keyframes md-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* Compact width: navigation bar at the bottom, floating mini player above it */
+@media (max-width: 720px) {
+  .app {
+    --nav-h: calc(80px + env(safe-area-inset-bottom, 0px));
+    --mini-h: 64px;
+    --player-h: calc(var(--mini-h) + var(--nav-h) + 16px);
+  }
+
+  .sidebar {
+    top: auto;
+    padding: 0 4px env(safe-area-inset-bottom, 0px);
+    background: var(--md-surface);
+    border-top: 0;
+  }
+
+  .sidebar__foot {
+    border-left: 0;
+  }
+
+  .sidebar .navitem,
+  .sidebar .navitem[aria-current='page'] {
+    gap: 4px;
+    min-width: 72px;
+    min-height: 64px;
+    padding: 4px 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: none;
+    animation: none;
+  }
+
+  .sidebar .navitem:hover {
+    background: none;
+  }
+
+  /* The active indicator is a pill behind the icon only; it grows from the centre. */
+  .sidebar .navitem svg {
+    box-sizing: content-box;
+    width: 24px;
+    height: 24px;
+    padding: 4px 20px;
+    border-radius: var(--r-pill);
+    background: linear-gradient(var(--md-secondary-container), var(--md-secondary-container)) center / 0% 100% no-repeat;
+    transition: background-size var(--md-medium) var(--md-emphasized);
+  }
+
+  .sidebar .navitem:hover svg {
+    background-color: var(--md-hover);
+  }
+
+  .sidebar .navitem[aria-current='page'] svg {
+    background-size: 100% 100%;
+  }
+
+  .player {
+    right: 12px;
+    bottom: calc(var(--nav-h) + 8px);
+    left: 12px;
+    min-height: 0;
+    border-radius: var(--r-card);
+  }
+
+  .player .icon-btn--main {
+    width: 40px;
+    height: 40px;
+  }
+
+  .progress {
+    right: 16px;
+    left: 16px;
+    background: var(--md-surface-low);
+  }
+
+  .progress__line {
+    background: var(--accent);
+  }
+
+  .dialog {
+    border-radius: var(--r-hero);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content > *,
+  .navitem[aria-current='page'],
+  .fold[open] > .fold__body,
+  .md-ripple {
+    animation: none;
+  }
+
+  .md-ripple {
+    display: none;
+  }
+
+  .sidebar .navitem svg,
+  .dialog,
+  .toast {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .panel,
+  .player,
+  .surface-overlay {
+    border: 1px solid var(--text-2);
+  }
+}
+
+@media (forced-colors: active) {
+  .navitem[aria-current='page'] {
+    outline: 2px solid Highlight;
+  }
+}

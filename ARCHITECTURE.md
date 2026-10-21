@@ -147,6 +147,15 @@ it can never delay or fail playback.
   one server room today, ids leave room for direct/group conversations), People (search) and Profiles. The web app
   routes it under `/social` with pill tabs; the phone UI wraps the same sections in its own headers and chips
   (`mobile/pages.tsx`). Avatars are initials: other users' avatars aren't available to ordinary accounts.
+- **Chat server (direct and group messages):** a second, optional source next to the Subsonic room, served by the
+  self-hosted `server/chat` (its own accounts, never the Subsonic login; design in `CHAT.md`). Client code:
+  `api/chat/` (URL policy, validating HTTP client, framework-free `ChatSocket` with first-frame auth and jittered
+  backoff), `state/chatServer.ts` (address, `instanceId`, chat session, connection) and `state/chat.ts` (conversations,
+  messages, outbox, resync), stored in its own IndexedDB database `auralis-chat`. Switching chat servers deletes only that
+  database; the Subsonic session, settings, queue and caches in `auralis` are untouched, and signing out of one server
+  never signs out of the other. Wire types live in `shared/chat-protocol` (type-only). UI: `features/social/ChatServer.tsx`
+  (list source, thread at `/social/chat/c/:id`, new message/group, group info) and `features/settings/ChatServerSection.tsx`
+  (web and phone settings). The socket only pushes; sending is REST with an idempotency key.
 
 ### Lyrics (M4, extended for Spicy Lyrics)
 0. On track change, `useLyrics` first settles the track's **Spotify identity** (only with *External lookups* on): a
@@ -224,7 +233,10 @@ it can never delay or fail playback.
   `web/e2e/lyrics-auto.spec.ts` check they cannot reach the bundle or responses.
 - **No retry loops:** the HTTP client never retries; TanStack Query is configured with `retry: false`. The one exception
   is server-side: a Spotify search answered `401` is retried once with a fresh token. Failures surface
-  with a manual "Try again" (or "Sign in again" for rejected credentials).
+  with a manual "Try again" (or "Sign in again" for rejected credentials). Second exception: the chat server outbox
+  (`state/chat.ts`) resends a message that is waiting for the connection when the socket reconnects or the browser comes
+  back online, at most 5 attempts, then shows it as failed with Retry/Discard. That is safe only because sends carry a
+  `clientMessageId` the server de-duplicates on.
 
 ## 7. Verified vs assumed
 

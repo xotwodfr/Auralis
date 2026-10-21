@@ -1,7 +1,7 @@
 {
   "name": "@auralis/server",
   "private": true,
-  "version": "0.2.7",
+  "version": "0.3.0",
   "type": "module",
   "description": "Lyrics backend (Spicy Lyrics bridge + Spotify matching) and static host for the web build. Dependency-free at runtime.",
   "scripts": {

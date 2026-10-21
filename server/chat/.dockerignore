@@ -1,0 +1,11 @@
+node_modules
+tests
+scripts
+secrets
+backups
+.env
+.env.*
+vitest.config.ts
+tsconfig.json
+README.md
+compose.yaml
