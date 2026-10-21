@@ -1,7 +1,7 @@
 # Auralis — Design
 
 > **Superseded in part by Material 3 (see `MATERIA3.md`).** Web, desktop and Android now use M3 tonal surfaces,
-> shapes, state layers and motion (`shared/ui/src/styles/m3.css`, `android/frontend/m3-mobile.css`). There is no
+> shapes, state layers and motion (`shared/ui/src/styles/m3.css`; the phone UI is M3 throughout in `android/frontend/mobile.css`). There is no
 > glass any more: wherever this file says "glass", read "solid tonal surface". Narrow web screens use a bottom
 > navigation bar. The rest (tokens, themes, lyrics, accessibility rules) still applies.
 

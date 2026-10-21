@@ -14,7 +14,7 @@ import { Icon } from '@auralis/ui/ui/Icon'
 import { KaraokeButton, KaraokeIntensity } from '@auralis/ui/ui/KaraokeButton'
 import { Slider } from '@auralis/ui/ui/Slider'
 import { TransportControls } from '@auralis/ui/ui/TransportControls'
-import { Backdrop, tintStyle, useCoverTint, useDismiss } from './parts'
+import { useDismiss } from './parts'
 
 /** `remaining`: show the time left as -m:ss on the right, like Apple Music. */
 function Seek({ remaining = false }: { remaining?: boolean }) {
@@ -62,7 +62,6 @@ export default function Player() {
   )
   const track = currentEntry(s.queue)?.track
   const ids = useStarred()
-  const tint = useCoverTint(track?.coverArt, 30)
   const [queueOpen, setQueueOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [fxOpen, setFxOpen] = useState(false)
@@ -102,8 +101,7 @@ export default function Player() {
   const lyricsTrack = track && { id: track.id, title: track.title, artist: track.artist, album: track.album, duration: track.duration, isrc: track.isrc, explicit: track.explicit }
   if (landscape && track && lyricsTrack) {
     return (
-      <div className={`m-player m-player--land${closing ? ' is-closing' : ''}`} role="dialog" aria-modal="true" aria-label="Now Playing" style={tintStyle(tint)}>
-        <Backdrop />
+      <div className={`m-player m-player--land${closing ? ' is-closing' : ''}`} role="dialog" aria-modal="true" aria-label="Now Playing">
         <div className="m-land">
           <div className="m-land__side">
             <div className="m-land__top">
@@ -145,8 +143,7 @@ export default function Player() {
     )
   }
   return (
-    <div className={`m-player${closing ? ' is-closing' : ''}`} role="dialog" aria-modal="true" aria-label="Now Playing" style={tintStyle(tint)}>
-      <Backdrop />
+    <div className={`m-player${closing ? ' is-closing' : ''}`} role="dialog" aria-modal="true" aria-label="Now Playing">
       <header className="m-player__bar">
         <button ref={closeButton} type="button" className="m-round m-round--plain" aria-label="Close player" onClick={close}>
           <Icon name="down" size={26} />
@@ -217,8 +214,7 @@ export default function Player() {
 
       {lyricsOpen && track && (
         <div className={`m-lyricsfull${lyricsClosing ? ' is-closing' : ''}`} role="dialog" aria-modal="true" aria-label="Lyrics">
-          <Backdrop />
-          <header className="m-lyricsfull__bar">
+            <header className="m-lyricsfull__bar">
             <button type="button" className="m-round" aria-label="Close lyrics" autoFocus onClick={closeLyrics}>
               <Icon name="down" size={26} />
             </button>

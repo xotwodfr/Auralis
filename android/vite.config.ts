@@ -19,5 +19,7 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
     css: false,
+    // Its ESM imports omit file extensions, which only a bundler resolves; Node (Vitest's default for deps) does not.
+    server: { deps: { inline: ['@material/material-color-utilities'] } },
   },
 })

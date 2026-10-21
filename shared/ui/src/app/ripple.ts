@@ -1,5 +1,5 @@
 // M3 touch ripple: one delegated listener instead of a wrapper around every button.
-const TARGETS = '.btn, .icon-btn:not(.icon-btn--main), .navitem, .segmented__item, .chip, .fold__summary, .m-tab, .m-chip, .m-row, .menu__item, .choice'
+const TARGETS = '.btn, .icon-btn:not(.icon-btn--main), .navitem, .segmented__item, .chip, .fold__summary, .m-tab, .m-chip, .m-row, .menu__item, .choice, .m-set__head, .m-set__row--button, .m-quick__item, .m-browse__tile, .m-tile a, .m-song__main, .m-mini__open, .m-play'
 
 export function installRipple(root: HTMLElement = document.body) {
   root.addEventListener('pointerdown', (e) => {

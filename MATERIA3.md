@@ -3,9 +3,13 @@
 > **Status (2026-10-21):** first pass shipped as an override layer, not the full plan below.
 > Web/desktop: `shared/ui/src/styles/m3.css` (tonal surfaces derived per theme via `color-mix`, shape scale, state
 > layers, M3 buttons/fields/chips/segmented/slider/dialog/snackbar, navigation drawer, floating player, bottom
-> navigation bar under 720px, fade-through page transitions). Android: `android/frontend/m3-mobile.css` (dark M3
-> scheme from the green seed, navigation bar with pill indicator, M3 switch, FAB play button with shape morph,
-> bottom sheets with drag handle). Ripple: `shared/ui/src/app/ripple.ts`. Roboto Flex is bundled
+> navigation bar under 720px, fade-through page transitions). Android (2026-10-21, second pass): `android/frontend/mobile.css`
+> is rewritten on M3 colour roles only (no hard-coded colours); `mobile/scheme.ts` generates the scheme with Material Color
+> Utilities (Tonal Spot, 2025 spec), light and dark by system setting, from the app's seed or from the playing cover with
+> Dynamic colour on (replaces the blurred-cover backdrop and tint gradients). Top app bars that take the container colour
+> on scroll, search bar, filter chips with checks, list items, FAB, Expressive slider and transport, navigation bar,
+> bottom sheets, outlined text fields and checkboxes. Settings is a list of expandable sections (grouped list items,
+> animated open/close, icon shape morph). Ripple: `shared/ui/src/app/ripple.ts`. Roboto Flex is bundled
 > (`@fontsource-variable/roboto-flex`, 34 KB latin subset, works offline and under the Tauri CSP). The glass layer is
 > gone: `.glass-nav` / `--glass-*` removed, overlays use `.surface-overlay`. Desktop (Tauri, WebKitGTK 2.54) supports
 > every CSS feature used (`color-mix`, oklab, `@starting-style`). Still open: splitting `global.css` by feature.

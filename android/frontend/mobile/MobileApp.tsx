@@ -7,7 +7,7 @@ import { ToastRegion } from '@auralis/ui/ui/Toast'
 import { Icon, type IconName } from '@auralis/ui/ui/Icon'
 import MiniPlayer from './MiniPlayer'
 import Player from './Player'
-import { Backdrop } from './parts'
+import { useDynamicColor } from './parts'
 import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage, SocialPage, SocialProfilePage, SocialThreadPage, ChatServerThreadPage } from './pages'
 import { Activity, ConversationList, People } from '@auralis/ui/features/social/Social'
 import { CHAT_POLL_BACKGROUND_MS, useChatConnection, useChatPolling } from '@auralis/ui/features/social/data'
@@ -37,7 +37,6 @@ function Shell() {
   }, [pathname])
   return (
     <div className="m-app">
-      <Backdrop />
       <main className="m-main">
         <ErrorBoundary key={pathname}>
           <div className="m-route">
@@ -76,6 +75,7 @@ export default function MobileApp({ signedIn }: { signedIn: boolean }) {
 /** Now Playing is a modal route: the page underneath stays mounted (and keeps its scroll), and Back closes it. */
 function SignedIn() {
   useLyricSize()
+  useDynamicColor()
   const location = useLocation()
   const playerOpen = location.pathname === '/now-playing'
   const background = (location.state as { background?: Location } | null)?.background

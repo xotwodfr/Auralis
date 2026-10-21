@@ -13,7 +13,8 @@
     "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json"
   },
   "dependencies": {
-    "@auralis/ui": "*"
+    "@auralis/ui": "*",
+    "@material/material-color-utilities": "^0.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",

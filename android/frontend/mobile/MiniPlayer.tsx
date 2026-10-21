@@ -3,7 +3,7 @@ import { Cover, StarButton } from '@auralis/ui/features/library/components'
 import { isStarred, useStarred } from '@auralis/ui/features/library/starred'
 import { usePlayback } from '@auralis/ui/state/playback'
 import { Icon, SwapIcon } from '@auralis/ui/ui/Icon'
-import { tintStyle, useCoverTint, useOpenPlayer } from './parts'
+import { useOpenPlayer } from './parts'
 
 /** Re-renders on every playhead tick, so it is its own component. */
 function Line() {
@@ -22,12 +22,11 @@ export default function MiniPlayer() {
   const error = usePlayback((s) => s.error)
   const togglePlay = usePlayback((s) => s.togglePlay)
   const ids = useStarred()
-  const tint = useCoverTint(track?.coverArt, 24)
   const open = useOpenPlayer()
   if (!track) return null
   const playing = status === 'playing' || status === 'buffering' || (status === 'loading' && autoplay)
   return (
-    <section className="m-mini" aria-label="Player" style={tintStyle(tint)}>
+    <section className="m-mini" aria-label="Player">
       <button type="button" className="m-mini__open" aria-label={`Open player: ${track.title}`} onClick={() => open()}>
         <span className="m-thumb">
           <Cover id={track.coverArt} size={96} />

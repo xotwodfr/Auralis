@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { paletteFor } from '@auralis/ui/app/artworkTheme'
-import { coverArtUrl } from '@auralis/ui/api/subsonic/endpoints'
 import type { Song } from '@auralis/ui/api/subsonic/types'
 import { currentEntry } from '@auralis/ui/audio/queue'
 import { Cover, StarButton } from '@auralis/ui/features/library/components'
@@ -11,41 +10,21 @@ import { useAuth } from '@auralis/ui/state/auth'
 import { useSettings } from '@auralis/ui/state/settings'
 import { usePlayback } from '@auralis/ui/state/playback'
 import { Icon } from '@auralis/ui/ui/Icon'
+import { DEFAULT_SEED, applyScheme, seedFromHue } from './scheme'
 
-/** The cover's dominant hue as a dark, saturated tint for gradients; undefined until known (CSS falls back to grey). */
-export function useCoverTint(coverArt: string | undefined, lightness = 32): string | undefined {
+/** Material You: the whole scheme follows the playing cover's hue when Dynamic colour is on, else the app's own seed. */
+export function useDynamicColor() {
   const credentials = useAuth((s) => s.session?.credentials)
   const adaptive = useSettings((s) => s.adaptiveColors)
-  // Tagged with the cover it belongs to, so a stale hue never shows while the next cover is decoding.
-  const [found, setFound] = useState<{ cover: string; hue: number | null } | null>(null)
+  const cover = usePlayback((s) => currentEntry(s.queue)?.track.coverArt)
   useEffect(() => {
-    if (!adaptive || !credentials || !coverArt) return
+    if (!adaptive || !credentials || !cover) return applyScheme(DEFAULT_SEED)
     let live = true
-    void paletteFor(credentials, coverArt).then((p) => live && setFound({ cover: coverArt, hue: p?.hue ?? null }))
+    void paletteFor(credentials, cover).then((p) => live && applyScheme(p?.hue == null ? DEFAULT_SEED : seedFromHue(p.hue)))
     return () => {
       live = false
     }
-  }, [adaptive, credentials, coverArt])
-  const hue = adaptive && found && found.cover === coverArt ? found.hue : null
-  return hue === null ? undefined : `hsl(${Math.round(hue)} 45% ${lightness}%)`
-}
-
-export const tintStyle = (tint: string | undefined) => (tint ? ({ '--tint': tint } as CSSProperties) : undefined)
-
-/** The playing track's cover, blurred, behind everything; fades between covers. Sits at z-index -1 of the nearest stacking context. */
-export function Backdrop() {
-  const credentials = useAuth((s) => s.session?.credentials)
-  const cover = usePlayback((s) => currentEntry(s.queue)?.track.coverArt)
-  const adaptive = useSettings((s) => s.adaptiveColors)
-  const src = adaptive && credentials && cover ? coverArtUrl(credentials, cover, 160) : undefined
-  // A failed load must not leave a broken-image icon over the page.
-  const [bad, setBad] = useState<string>()
-  if (!src || bad === src) return null
-  return (
-    <div className="m-backdrop" aria-hidden>
-      <img key={src} src={src} alt="" decoding="async" onError={() => setBad(src)} />
-    </div>
-  )
+  }, [adaptive, credentials, cover])
 }
 
 const EXIT_MS = 200
@@ -85,11 +64,10 @@ export function BackButton() {
   )
 }
 
-/** Big tinted header for albums, playlists and artists: art, title, subtitle line. */
+/** Header for albums, playlists and artists: art, title, subtitle line. */
 export function Hero({ cover, title, children, round = false, art }: { cover?: string; title: string; children?: ReactNode; round?: boolean; art?: ReactNode }) {
-  const tint = useCoverTint(cover)
   return (
-    <header className="m-hero" style={tintStyle(tint)}>
+    <header className="m-hero">
       <div className="m-hero__bar">
         <BackButton />
       </div>

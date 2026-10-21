@@ -109,15 +109,15 @@ export function Home() {
   )
 }
 
-const BROWSE: { to: string; label: string; color: string }[] = [
-  { to: '/browse/newest', label: 'New in your library', color: 'var(--m-c1)' },
-  { to: '/browse/recent', label: 'Recently played', color: 'var(--m-c2)' },
-  { to: '/browse/frequent', label: 'Most played', color: 'var(--m-c3)' },
-  { to: '/browse/random', label: 'Discover', color: 'var(--m-c4)' },
-  { to: '/browse/alphabeticalByName', label: 'Albums A–Z', color: 'var(--m-c5)' },
-  { to: '/library?view=artists', label: 'Artists', color: 'var(--m-c6)' },
-  { to: '/library/favorites', label: 'Liked Songs', color: 'var(--m-c7)' },
-  { to: '/library?view=playlists', label: 'Playlists', color: 'var(--m-c8)' },
+const BROWSE: { to: string; label: string }[] = [
+  { to: '/browse/newest', label: 'New in your library' },
+  { to: '/browse/recent', label: 'Recently played' },
+  { to: '/browse/frequent', label: 'Most played' },
+  { to: '/browse/random', label: 'Discover' },
+  { to: '/browse/alphabeticalByName', label: 'Albums A–Z' },
+  { to: '/library?view=artists', label: 'Artists' },
+  { to: '/library/favorites', label: 'Liked Songs' },
+  { to: '/library?view=playlists', label: 'Playlists' },
 ]
 
 const DEBOUNCE_MS = 300
@@ -155,7 +155,7 @@ export function SearchPage() {
           <ul className="m-browse">
             {BROWSE.map((b) => (
               <li key={b.to}>
-                <Link to={b.to} className="m-browse__tile" style={{ background: b.color }}>
+                <Link to={b.to} className="m-browse__tile">
                   {b.label}
                 </Link>
               </li>

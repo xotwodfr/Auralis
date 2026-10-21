@@ -134,7 +134,7 @@ body {
 
 .btn--primary,
 .btn--danger {
-  color: #fff;
+  color: var(--on-accent, #fff);
   border-color: transparent;
 }
 
@@ -143,6 +143,7 @@ body {
 }
 
 .btn--danger {
+  color: var(--on-danger, #fff);
   background: var(--danger-fill);
 }
 
@@ -179,12 +180,12 @@ body {
 
 /* The main play button is a filled icon button */
 .icon-btn--main {
-  color: #fff;
+  color: var(--on-accent, #fff);
   background: var(--accent-fill);
 }
 
 .icon-btn--main:hover:not(:disabled) {
-  color: #fff;
+  color: var(--on-accent, #fff);
   background: var(--accent-fill);
   box-shadow: var(--md-elev-1);
 }
