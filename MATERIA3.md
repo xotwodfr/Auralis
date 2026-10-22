@@ -35,7 +35,7 @@ the primitives, then sweep `global.css`.
 | Glass blur nav | `--glass-*` on the player and nav | Not part of M3; replaced by solid `surface-container` |
 | Components | Custom | M3 specs: top app bar, navigation rail / bar / drawer, FAB, chips, cards, sliders, switches, dialogs, snackbars |
 
-Not affected: audio engine, Subsonic API, lyrics, chat protocol, state stores, routing.
+Not affected: audio engine, Subsonic API, lyrics, state stores, routing.
 
 ## Decision needed first: hand-roll vs. a library
 
@@ -86,7 +86,7 @@ Restyle in `shared/ui/src/ui/`, keeping props and ARIA unchanged so feature code
 - Update `web/e2e` selectors only if roles or names change (they mostly will not).
 
 ### Phase 4: Pages (4 to 6 days)
-Library grids and lists, album/artist/playlist pages, Search, Queue, Lyrics, Social/Chat, Settings, Connect screen.
+Library grids and lists, album/artist/playlist pages, Search, Queue, Lyrics, Social, Settings, Connect screen.
 Mostly replacing radii, surfaces, padding rhythm and type roles in `global.css` (~2,900 lines, currently one file).
 Use this phase to split `global.css` by feature while touching it, which makes the diff reviewable.
 Settings already uses collapsible sections; restyle them as M3 list items with a trailing chevron.

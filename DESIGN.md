@@ -100,10 +100,10 @@ right-side or overlay lyrics panel on Now Playing.
   the account sub-line uses `--nav-sub` (82%), which is what keeps it AA *on the active pill*, the tightest case.
   **Collapsed rail** (72px, persisted in `localStorage`): icons only, names carried by `title`/`aria-label`.
   Widths come from one `--sidebar-w` token that the fixed player bar also reads.
-- **Social:** solid panels with hairline rows (content, not navigation); pill tabs (Activity · Chat · People) in the
+- **Social:** solid panels with hairline rows (content, not navigation); pill tabs (Activity · People) in the
   segmented-control style, inactive labels in `--text` because the track on the page ground is too dark for `--text-2`
   to reach AA. "Listening now" carries a `--live` dot *and* the words. Avatars are neutral initial circles (the server
-  doesn't give other users' pictures); own chat bubbles take `--accent-fill` with white text. In the phone UI the same
+  doesn't give other users' pictures). In the phone UI the same
   sections sit under a back-button header and green chips, and the Social button is the top-left control of every tab.
 - **Narrow screens (≤720px):** the sidebar becomes a horizontally scrolling strip of icon-above-label tabs above the
   content, with Settings pinned at its right behind a hairline; the active tab is underlined instead of edge-barred.

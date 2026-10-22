@@ -14,7 +14,6 @@ import { useSpotifyLinks } from '../../state/spotifyLinks'
 import { toast } from '../../state/toast'
 import { ConfirmDialog } from '../../ui/Dialog'
 import { SegmentedControl } from '../../ui/SegmentedControl'
-import { ChatServerSection } from './ChatServerSection'
 
 /** A mini window painted by the theme's own tokens (the `data-theme` attribute scopes them to this element). */
 function Swatch({ theme, style }: { theme: string; style?: Record<string, string> }) {
@@ -243,10 +242,6 @@ export default function Settings() {
             Disconnect
           </button>
         </div>
-      </Section>
-
-      <Section id="chat-server" title="Chat server">
-        <ChatServerSection />
       </Section>
 
       <Section id="playback-settings" title="Playback">

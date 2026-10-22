@@ -1,9 +1,7 @@
-import { HttpResponse, http } from 'msw'
-import { getChatMessages, getNowPlaying } from '../../src/api/subsonic/endpoints'
-import { SubsonicError } from '../../src/api/subsonic/errors'
+import { http } from 'msw'
+import { getNowPlaying } from '../../src/api/subsonic/endpoints'
 import type { NowPlayingEntry, Song } from '../../src/api/subsonic/types'
 import { formatAgo, isLive, people, statusText } from '../../src/features/social/data'
-import { isUnsupported, unreadCount } from '../../src/state/social'
 import { BASE, PASSWORD, USER, authed, server } from '../server'
 
 const c = { baseUrl: BASE, username: USER, password: PASSWORD }
@@ -36,43 +34,6 @@ describe('getNowPlaying', () => {
   })
 })
 
-describe('getChatMessages', () => {
-  it('keeps well-formed messages, oldest first, and passes `since`', async () => {
-    let since: string | null = null
-    server.use(
-      http.get(`${BASE}/rest/getChatMessages`, authed((q) => {
-        since = q.get('since')
-        return { chatMessages: { chatMessage: [
-          { username: 'b', time: 20, message: 'second' },
-          { username: 'a', time: 10, message: 'first' },
-          { username: 'c', time: '30', message: 'bad time' },
-          { username: 'd', time: 40 },
-        ] } }
-      })),
-    )
-    expect(await getChatMessages(c, 5)).toEqual([
-      { username: 'a', time: 10, message: 'first' },
-      { username: 'b', time: 20, message: 'second' },
-    ])
-    expect(since).toBe('5')
-  })
-
-  it("Navidrome's 410 is an HTTP error the store reads as 'no chat on this server'", async () => {
-    const err = await getChatMessages(c).catch((e: unknown) => e)
-    expect(err).toBeInstanceOf(SubsonicError)
-    expect(isUnsupported(err)).toBe(true)
-  })
-
-  it('a non-Subsonic page (SPA fallback) also means unsupported; a network failure or generic error does not', async () => {
-    server.use(http.get(`${BASE}/rest/getChatMessages`, () => HttpResponse.text('<html></html>')))
-    expect(isUnsupported(await getChatMessages(c).catch((e: unknown) => e))).toBe(true)
-    expect(isUnsupported(new SubsonicError('network', 'x'))).toBe(false)
-    expect(isUnsupported(new SubsonicError('unknown', 'x', 0))).toBe(false)
-    expect(isUnsupported(new SubsonicError('not-found', 'x', 70))).toBe(true)
-    expect(isUnsupported(new SubsonicError('http', 'x', undefined, 500))).toBe(false)
-  })
-})
-
 describe('listening status', () => {
   it('is live only while the report is fresh and not paused; older reports show their age', () => {
     expect(isLive(entry({ minutesAgo: 3 }))).toBe(true) // within a 4-minute track
@@ -90,27 +51,12 @@ describe('listening status', () => {
 })
 
 describe('people', () => {
-  it('merges now-playing and chat authors, leaves out the signed-in user, lists live listeners first', () => {
+  it('leaves out the signed-in user, keeps each person\'s freshest report, lists live listeners first', () => {
     const list = people(
       [entry({ username: 'zoe', minutesAgo: 1 }), entry({ username: 'Alice', minutesAgo: 0 }), entry({ username: 'sam', minutesAgo: 90 }), entry({ username: 'zoe', minutesAgo: 30 })],
-      [{ username: 'bo', time: 1, message: 'hi' }, { username: 'sam', time: 2, message: 'yo' }, { username: 'alice', time: 3, message: 'me' }],
       'alice',
     )
-    expect(list.map((p) => p.name)).toEqual(['zoe', 'sam', 'bo'])
-    expect(list[0]!.entry!.minutesAgo).toBe(1) // the freshest report wins
-    expect(list[1]!.lastMessage!.message).toBe('yo')
-  })
-})
-
-describe('unreadCount', () => {
-  const messages = [
-    { username: 'alex', time: 10, message: 'old' },
-    { username: 'alice', time: 20, message: 'mine' },
-    { username: 'alex', time: 30, message: 'new' },
-  ]
-  it("counts others' messages after the last one read, never the user's own", () => {
-    expect(unreadCount({ messages, lastRead: 10 }, 'Alice')).toBe(1)
-    expect(unreadCount({ messages, lastRead: 30 }, 'alice')).toBe(0)
-    expect(unreadCount({ messages, lastRead: undefined }, 'alice')).toBe(0) // not loaded yet
+    expect(list.map((p) => p.name)).toEqual(['zoe', 'sam'])
+    expect(list[0]!.entry!.minutesAgo).toBe(1)
   })
 })

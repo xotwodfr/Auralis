@@ -305,28 +305,21 @@ Legend: `[ ]` todo · `[x]` done. Keep the diff minimal and prefer existing help
 - [ ] Native apps (`apple/`): not implemented.
 - [ ] Skipped on purpose: stereo width and bass enhancement (EQ presets cover bass; width would add a control for little).
 
-## Social (friends, listening activity, chat, profiles)
+## Social (listening activity, people, profiles)
 
-- [x] Backend audit: `getNowPlaying` is real (all users, expires at track end); Subsonic chat exists on some servers but
-      Navidrome answers 410; no Subsonic server has friends, requests, presence or direct messages. No backend added.
+- [x] Backend audit: `getNowPlaying` is real (all users, expires at track end); no Subsonic server has friends, requests, presence or messages. No backend added.
 - [x] Social entry top-left: first sidebar destination (and first narrow-screen tab) on the web, the top-left button on
-      every phone tab. Unread badge from real chat state only.
-- [x] Activity (live vs. stale, play / open album), People (search), Profiles (status, recent messages, mention), Chat
-      (conversation list + thread, send waits for the server, unread/read, unavailable/offline/error/session states).
+      every phone tab.
+- [x] Activity (live vs. stale, play / open album), People (search), Profiles (status), with
+      offline/error/session states.
 - [x] Privacy: "Share what I'm playing" (the visible now-playing ping) is its own setting, **off by default**, in Social
       and both Settings pages; play counts stay under "Report plays".
 - [x] Desktop: the queue and the effects panel no longer stack on top of each other (opening one closes the other).
 - [x] e2e config: the build now targets the preview server's lyrics bridge (19 specs failed against the hosted default).
-- [ ] Not possible on Subsonic: friends and friend requests, direct/group messages, presence, other users' history.
+- [ ] Not possible on Subsonic: friends and friend requests, messages, presence, other users' history.
       These need a social service with its own accounts and authorization; deliberately not invented.
-- [x] Direct and group messages: the self-hosted chat server (`server/chat`, CHAT.md) with its own accounts,
-      PostgreSQL, Docker Compose, WebSocket delivery; Settings → Chat server and chat-server conversations in Social on web,
-      Tauri and the phone UI. Owner of the new server dependencies (fastify, @fastify/websocket, kysely, pg, typebox): the
-      chat server package; none reach a client bundle.
-- [ ] Chat server, not done: typing indicators and presence (CHAT.md Phase 6, optional), the Apple client (Phase 12:
-      needs a Mac), the network rollouts on the real host (Phase 11), a device test on Android, and a soak/load run.
-- [ ] Unverified: a real Airsonic chat, a real Navidrome `getNowPlaying`, and the Android app on a device.
-- [ ] Chat text goes in the query string (no POST in the API; OpenSubsonic `formPost` could be used where advertised).
+- [x] Chat removed everywhere (the Subsonic room, the self-hosted chat server, its Docker stack, CI job and docs).
+- [ ] Unverified: a real Navidrome `getNowPlaying`, and the Android app on a device.
 
 ## Cross-cutting rules (all milestones)
 

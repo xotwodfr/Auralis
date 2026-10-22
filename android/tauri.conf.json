@@ -11,7 +11,7 @@
   },
   "app": {
     "windows": [{ "title": "Auralis", "width": 1200, "height": 800, "minWidth": 360, "minHeight": 480 }],
-    "security": { "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http: https:; media-src 'self' blob: http: https:; connect-src 'self' ipc: http://ipc.localhost http: https: ws: wss:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none'" }
+    "security": { "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http: https:; media-src 'self' blob: http: https:; connect-src 'self' ipc: http://ipc.localhost http: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none'" }
   },
   "bundle": {
     "active": true,

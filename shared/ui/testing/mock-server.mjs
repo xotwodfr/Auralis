@@ -25,14 +25,11 @@ const SONGS = [
   song('s4', 'Fourth Song', 'al2', 1), song('s5', 'Fifth Song', 'al2', 2), song('s6', 'Stayin Alive', 'al3', 1),
   song('s7', `A very long song title that keeps going ${'Supercalifragilisticexpialidocious'.repeat(2)} and then some more words`, 'al3', 2),
 ]
-// Social: another account is playing a track now, a third one reported a track long ago; the chat room starts with one message.
+// Social: another account is playing a track now, a third one reported a track long ago.
 const OTHERS_PLAYING = [
   { username: 'alex', minutesAgo: 0, playerName: 'Feishin', id: 's6' },
   { username: 'sam', minutesAgo: 95, playerName: 'Substreamer', id: 's4' },
 ]
-const chatSeed = () => [{ username: 'alex', time: Date.now() - 5 * 60_000, message: 'Anyone else on a Bee Gees kick?' }]
-let chat = chatSeed()
-let chatGone = false // true = behave like Navidrome (410)
 /** Who announced what with `scrobble submission=false`: the caller shows up in `getNowPlaying` only after that. */
 let announced = null
 const PLAYLISTS = [{ id: 'pl1', name: 'Road trip', songCount: 2, duration: 80, owner: USER, songs: ['s1', 's4'] }]
@@ -253,16 +250,6 @@ function json(q, name) {
       const entries = [...OTHERS_PLAYING, ...(announced ? [{ username: USER, minutesAgo: 0, playerName: 'Auralis', id: announced }] : [])]
       return ok({ nowPlaying: { entry: entries.map(({ id, ...who }) => ({ ...SONGS.find((s) => s.id === id), ...who, playerId: 1 })) } })
     }
-    case 'getChatMessages': {
-      const since = Number(q.get('since') ?? 0)
-      return ok({ chatMessages: { chatMessage: chat.filter((m) => m.time > since) } })
-    }
-    case 'addChatMessage': {
-      const message = q.get('message') ?? ''
-      if (!message.trim()) return failed(10, 'Required parameter is missing: message')
-      chat.push({ username: USER, time: Math.max(Date.now(), (chat.at(-1)?.time ?? 0) + 1), message })
-      return ok()
-    }
     default: return failed(0, `unsupported: ${name}`)
   }
 }
@@ -281,15 +268,7 @@ const server = createServer((req, res) => {
     starred = new Set()
     playlists = structuredClone(PLAYLISTS)
     nextPlaylistId = 2
-    chat = chatSeed()
-    chatGone = false
     announced = null
-    return void res.writeHead(204, cors).end()
-  }
-  if (url.pathname === '/__chat') {
-    // `?gone=1`: no chat (Navidrome); `?say=text&as=user`: someone else posts.
-    if (url.searchParams.has('gone')) chatGone = url.searchParams.get('gone') === '1'
-    if (url.searchParams.has('say')) chat.push({ username: url.searchParams.get('as') ?? 'alex', time: Date.now(), message: url.searchParams.get('say') })
     return void res.writeHead(204, cors).end()
   }
   if (url.pathname === '/__bulk') {
@@ -340,7 +319,6 @@ const server = createServer((req, res) => {
       : res.writeHead(200, { ...cors, 'content-type': 'application/json' }).end(JSON.stringify(failed(40, 'Wrong username or password'))))
   }
 
-  if (chatGone && (name === 'getChatMessages' || name === 'addChatMessage')) return void res.writeHead(410, cors).end('Gone')
   if (name === 'getCoverArt') {
     const color = COVERS[q.get('id')]
     return void (color ? res.writeHead(200, { ...cors, 'content-type': 'image/png', 'cache-control': 'max-age=60' }).end(png(color)) : res.writeHead(404, cors).end())

@@ -122,11 +122,3 @@ export interface NowPlayingEntry {
   paused: boolean
   song: Song
 }
-
-/** A message in the server-wide chat room (`getChatMessages`). */
-export interface ChatMessage {
-  username: string
-  /** Milliseconds since the epoch. */
-  time: number
-  message: string
-}

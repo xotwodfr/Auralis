@@ -11,8 +11,6 @@ android/        Android: its own Tauri 2 Rust crate, the Gradle project (gen/and
 macos/          Native macOS app: Sources/ + project.yml (XcodeGen).
 ios/            Native iOS app: Sources/ + project.yml (XcodeGen).
 server/         Lyrics backend (Docker image) and the Vite dev plugin that mounts it. Not a client.
-server/chat/    Chat server (Docker Compose + PostgreSQL). Standalone package with its own lockfile; not an npm workspace.
-shared/chat-protocol/  Type-only wire types shared by server/chat and shared/ui (erased at build time).
 ```
 
 ## What is platform-specific, what is shared
@@ -43,14 +41,12 @@ tauri    -> shared/ui, server (dev only)
 android  -> shared/ui, server (dev only)
 macos    -> shared/apple
 ios      -> shared/apple
-shared/ui -> shared/chat-protocol (types only)
 shared/* -> nothing
 server   -> nothing
-server/chat -> shared/chat-protocol (types only)
 ```
 
 Platforms never import each other. `npm run lint` runs `scripts/check-boundaries.mjs`, which resolves every import in
-`shared/ui`, `shared/chat-protocol`, `server`, `server/chat`, `web`, `tauri` and `android` and fails when one crosses these lines (the longest matching directory owns a file, so `server/chat` is not part of `server`). (The Apple side has no such check:
+`shared/ui`, `server`, `web`, `tauri` and `android` and fails when one crosses these lines. (The Apple side has no such check:
 its boundary is the XcodeGen `sources`/`packages` entries in each `project.yml`.)
 
 `@auralis/ui/...` resolves to `shared/ui/src/...` through a Vite/TypeScript alias (`shared/ui/vite.base.ts`, `paths` in each

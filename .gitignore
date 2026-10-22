@@ -26,6 +26,3 @@ xcuserdata
 DerivedData
 .build
 
-# Chat server (server/chat): database password and local backups
-server/chat/secrets/
-server/chat/backups/

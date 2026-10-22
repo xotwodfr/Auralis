@@ -88,9 +88,8 @@ export const server = setupServer(
   http.get(`${BASE}/rest/scrobble`, recorded('scrobble')),
   http.get(`${BASE}/rest/createPlaylist`, recorded('createPlaylist')),
   http.get(`${BASE}/rest/updatePlaylist`, recorded('updatePlaylist')),
-  // Like Navidrome: nobody else playing, and no chat room (it answers 410 Gone).
+  // Like Navidrome: nobody else playing.
   http.get(`${BASE}/rest/getNowPlaying`, authed({ nowPlaying: {} })),
-  http.get(`${BASE}/rest/getChatMessages`, () => new HttpResponse('Gone', { status: 410 })),
   http.get(`${BASE}/rest/getOpenSubsonicExtensions`, () =>
     envelope({ openSubsonicExtensions: [{ name: 'songLyrics', versions: [1] }] }),
   ),

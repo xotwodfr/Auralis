@@ -59,19 +59,12 @@ for (const theme of THEMES) {
     await expect(page.locator('.syl.is-active')).toHaveCount(1, { timeout: 10_000 })
     const v = await scan(page)
     if (v.length) found['now playing (word-synced)'] = v
-    // Social: activity (live dot, play buttons, sharing switch) and the chat with both message bubbles and an unread badge.
+    // Social: activity (live dot, play buttons, sharing switch).
     await page.getByRole('link', { name: 'Social', exact: true }).click()
     await expect(page.getByRole('list', { name: 'Listening activity' })).toBeVisible()
     await page.waitForTimeout(350)
     const social = await scan(page)
     if (social.length) found['social activity'] = social
-    await page.getByRole('navigation', { name: 'Social' }).getByRole('link', { name: /Chat/ }).click()
-    await page.getByRole('textbox', { name: 'Message everyone on this server' }).fill('Contrast check')
-    await page.keyboard.press('Enter')
-    await expect(page.getByRole('log', { name: 'Messages' })).toContainText('Contrast check')
-    await page.waitForTimeout(350)
-    const chat = await scan(page)
-    if (chat.length) found['social chat'] = chat
     expect(found).toEqual({})
   })
 }

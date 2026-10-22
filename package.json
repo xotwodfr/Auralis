@@ -24,9 +24,7 @@
     "test": "npm test --workspaces --if-present",
     "test:e2e": "npm run test:e2e --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "eslint . && node scripts/check-boundaries.mjs",
-    "test:chat": "npm --prefix server/chat test",
-    "typecheck:chat": "npm --prefix server/chat run typecheck"
+    "lint": "eslint . && node scripts/check-boundaries.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

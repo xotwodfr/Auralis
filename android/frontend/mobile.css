@@ -215,7 +215,7 @@
   opacity: 0.38;
 }
 
-[data-platform='mobile'] :is(.form, .chat-form, .m-set__form form) {
+[data-platform='mobile'] :is(.form, .m-set__form form) {
   display: grid;
   gap: 20px;
 }
@@ -271,15 +271,10 @@
   line-height: 1.35;
 }
 
-[data-platform='mobile'] .error,
-[data-platform='mobile'] .chat-error {
+[data-platform='mobile'] .error {
   color: var(--md-sys-color-on-error-container);
   background: var(--md-sys-color-error-container);
   border-radius: var(--md-shape-md);
-}
-
-[data-platform='mobile'] .chat-error {
-  padding: 8px 12px;
 }
 
 [data-platform='mobile'] .actions {
@@ -294,20 +289,6 @@
 
 [data-platform='mobile'] .rows dt {
   color: var(--md-sys-color-on-surface-variant);
-}
-
-[data-platform='mobile'] .chat-badge {
-  padding: 2px 10px;
-  color: var(--md-sys-color-on-secondary-container);
-  font-size: 0.75rem;
-  font-weight: 500;
-  background: var(--md-sys-color-secondary-container);
-  border-radius: var(--md-shape-sm);
-}
-
-[data-platform='mobile'] .chat-badge--warn {
-  color: var(--md-sys-color-on-error-container);
-  background: var(--md-sys-color-error-container);
 }
 
 /* Round icon buttons used in bars (back, close, more). 40 dp to look at, 48 to hit. */
@@ -2419,22 +2400,6 @@ html[data-motion='back']::view-transition-new(root) {
   position: relative;
 }
 
-/* M3 badge: error colour; a small dot on the Social button (the count is in the link's label). */
-[data-platform='mobile'] .badge {
-  color: var(--md-sys-color-on-error);
-  background: var(--md-sys-color-error);
-}
-
-.m-social .badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  min-width: 8px;
-  height: 8px;
-  padding: 0;
-  font-size: 0;
-}
-
 [data-platform='mobile'] .social__tabs .m-chip {
   text-decoration: none;
 }
@@ -2513,112 +2478,6 @@ html[data-motion='back']::view-transition-new(root) {
   border-radius: var(--md-shape-md);
 }
 
-[data-platform='mobile'] .social__chat {
-  display: block;
-}
-
-/* The open conversation fills the space between the header and the dock; only its message log scrolls, so the composer
-   stays put (also when the keyboard resizes the viewport). */
-.social--thread {
-  display: flex;
-  flex-direction: column;
-  height: calc(100dvh - var(--m-tabs-h) - var(--m-mini-h) - 16px);
-}
-
-.m-main:has(.social--thread) {
-  padding-bottom: 0;
-}
-
-[data-platform='mobile'] .social--thread .thread {
-  flex: 1;
-  height: auto;
-  min-height: 0;
-  margin: 0 -16px;
-  background: none;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-[data-platform='mobile'] .thread__log {
-  padding: 16px;
-}
-
-[data-platform='mobile'] .msg__body {
-  color: var(--md-sys-color-on-surface);
-  background: var(--md-sys-color-surface-container-high);
-  border-radius: 20px 20px 20px var(--md-shape-xs);
-  animation: m-msg-in var(--md-medium) var(--md-decel);
-}
-
-[data-platform='mobile'] .msg--mine .msg__body {
-  color: var(--md-sys-color-on-primary);
-  background: var(--md-sys-color-primary);
-  border-radius: 20px 20px var(--md-shape-xs) 20px;
-}
-
-@keyframes m-msg-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.96);
-  }
-}
-
-[data-platform='mobile'] .composer {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 8px 12px 12px;
-  background: var(--md-sys-color-surface);
-  border: 0;
-}
-
-[data-platform='mobile'] .composer__field {
-  flex: 1;
-  min-height: 56px;
-  max-height: 160px;
-  padding: 16px 20px;
-  color: var(--md-sys-color-on-surface);
-  font: inherit;
-  line-height: 24px;
-  background: var(--md-sys-color-surface-container-high);
-  border: 0;
-  border-radius: var(--md-shape-xl);
-  resize: none;
-}
-
-[data-platform='mobile'] .composer__field:focus {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary);
-}
-
-[data-platform='mobile'] .composer__field::placeholder {
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-[data-platform='mobile'] .composer__send {
-  flex: none;
-  width: 56px;
-  height: 56px;
-  color: var(--md-sys-color-on-primary);
-  background: var(--md-sys-color-primary);
-  border-radius: var(--md-shape-full);
-  transition: background-color var(--md-short) var(--m-ease), color var(--md-short) var(--m-ease), border-radius var(--md-medium) var(--md-spring);
-}
-
-[data-platform='mobile'] .composer__send:active:not(:disabled) {
-  border-radius: var(--md-shape-lg);
-}
-
-[data-platform='mobile'] .composer__send:disabled {
-  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
-  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
-}
-
-[data-platform='mobile'] .composer__error {
-  color: var(--md-sys-color-error);
-}
-
 [data-platform='mobile'] .profile__name {
   font-size: 1.75rem;
   font-weight: 400;
@@ -2673,14 +2532,14 @@ html[data-motion='back']::view-transition-new(root) {
   }
 }
 
-/* ---- Native feel: chrome is not selectable (text fields, chat and lyrics are), no long-press callout ---- */
+/* ---- Native feel: chrome is not selectable (text fields and lyrics are), no long-press callout ---- */
 [data-platform='mobile'] .m-app {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
-[data-platform='mobile'] :is(input, textarea, .msg__body, .lyrics-stage, [contenteditable]) {
+[data-platform='mobile'] :is(input, textarea, .lyrics-stage, [contenteditable]) {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -2744,7 +2603,6 @@ html[data-motion='back']::view-transition-new(root) {
   .m-set[open] .m-set__body > *,
   [data-platform='mobile'] .dialog,
   [data-platform='mobile'] .fx,
-  [data-platform='mobile'] .msg__body,
   [data-platform='mobile'] .shell__panel {
     animation: none;
   }

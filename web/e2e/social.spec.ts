@@ -1,8 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { playing, seriousViolations, trackAudio } from '../../shared/ui/testing/e2e-helpers'
 
-// Social in a real browser against the mock server: "alex" is playing Stayin Alive now, "sam" reported a track long ago,
-// and the chat room starts with one message from alex (`/__chat` adds messages or turns chat off like Navidrome).
+// Social in a real browser against the mock server: "alex" is playing Stayin Alive now, "sam" reported a track long ago.
 
 const MOCK = 'http://127.0.0.1:4599'
 
@@ -22,7 +21,7 @@ async function connect(page: Page) {
   await expect(page.getByRole('heading', { name: 'Artists', level: 1 })).toBeVisible()
 }
 
-test('desktop: Social sits top-left, opens real activity and chat, and music keeps playing throughout', async ({ page, request }) => {
+test('desktop: Social sits top-left, opens real activity and people, and music keeps playing throughout', async ({ page }) => {
   await connect(page)
 
   // Top-left: the first destination, above every other one, in the left column.
@@ -47,39 +46,15 @@ test('desktop: Social sits top-left, opens real activity and chat, and music kee
   await expect(activity.getByRole('listitem').nth(1)).toContainText(/Played 2 h ago/)
   expect(await seriousViolations(page)).toEqual([])
 
-  const tabs = page.getByRole('navigation', { name: 'Social' })
-  await tabs.getByRole('link', { name: /Chat/ }).click()
-  const log = page.getByRole('log', { name: 'Messages' })
-  await expect(log).toContainText('Anyone else on a Bee Gees kick?')
-  await page.getByRole('textbox', { name: 'Message everyone on this server' }).fill('Hello from the e2e run')
-  await page.keyboard.press('Enter')
-  await expect(log).toContainText('Hello from the e2e run')
-  expect(await seriousViolations(page)).toEqual([])
-
-  // A new message while elsewhere: the badge appears when the app next checks (here: on returning to the window).
-  await tabs.getByRole('link', { name: 'People' }).click()
-  await request.get(`${MOCK}/__chat?say=${encodeURIComponent('Welcome!')}&as=sam`)
-  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
-  await expect(nav.getByRole('link', { name: 'Social, 1 unread' })).toBeVisible()
-  await page.getByRole('link', { name: /^sam/ }).click()
+  await page.getByRole('navigation', { name: 'Social' }).getByRole('link', { name: 'People' }).click()
+  await page.getByRole('list', { name: 'People' }).getByRole('link', { name: /^sam/ }).click()
   await expect(page.getByRole('heading', { name: 'sam', level: 2 })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Recent messages' })).toContainText('Welcome!')
-  await page.getByRole('button', { name: 'Mention in server chat' }).click()
-  await expect(page.getByRole('textbox', { name: 'Message everyone on this server' })).toHaveValue('@sam ')
-  await expect(nav.getByRole('link', { name: 'Social', exact: true })).toBeVisible() // read
+  expect(await seriousViolations(page)).toEqual([])
 
   const after = (await playing(page))!
   expect(after.src).toBe(before.src)
   expect(after.paused).toBe(false)
   expect(after.time).toBeGreaterThan(before.time)
-})
-
-test('a server without chat (Navidrome answers 410) gets an honest unavailable state', async ({ page, request }) => {
-  await request.get(`${MOCK}/__chat?gone=1`)
-  await connect(page)
-  await page.goto('/social/chat')
-  await expect(page.getByText('Chat isn’t available on this server')).toBeVisible()
-  await expect(page.getByRole('textbox')).toHaveCount(0)
 })
 
 test('sharing: off by default; turning it on makes the user show up for others', async ({ page, request }) => {
@@ -102,7 +77,7 @@ test('narrow web: Social is the first tab of the bottom navigation bar, without 
   const box = (await social.boundingBox())!
   expect(box.x).toBeLessThan(20)
   expect(box.y).toBeGreaterThan(740 - 100) // M3 navigation bar sits at the bottom
-  for (const path of ['/social', '/social/chat/server', '/social/people', '/social/people/alex']) {
+  for (const path of ['/social', '/social/people', '/social/people/alex']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { name: 'Social', level: 1 })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)

@@ -1,5 +1,5 @@
 // Minimal IndexedDB key-value stores (ARCHITECTURE.md §6: "remember" persistence). One database per owner, so a whole
-// owner's data can be dropped without touching anyone else's (the chat server's `auralis-chat`, CHAT.md §10.4).
+// owner's data can be dropped without touching anyone else's.
 const STORE = 'kv'
 
 export function createKv(name: string) {
@@ -52,5 +52,3 @@ export const kvGet = kv.get
 export const kvSet = kv.set
 export const kvDelete = kv.delete
 
-/** Everything the chat server client keeps (config, session). Switching or removing a chat server deletes only this. */
-export const chatKv = createKv('auralis-chat')

@@ -47,7 +47,6 @@ All are Navidrome-compatible Subsonic v1.16.1 operations (Navidrome compat doc +
 | Playlists | `getPlaylists` | — | List of playlists. |
 | Playlist | `getPlaylist` | `id` | Ordered songs. |
 | Now playing | `getNowPlaying` | — | Every user's current track (Navidrome: all users, filtered by library access; entries expire at track end). Social → Activity. **Used.** |
-| Chat | `getChatMessages` / `addChatMessage` | `since?` / `message` | Server-wide room. **Navidrome answers 410**; Airsonic and some others implement it. Social → Chat, with an unavailable state. **Used.** |
 | Search | `search3` | `query`, `artistCount?`, `artistOffset?`, `albumCount?`, `albumOffset?`, `songCount?`, `songOffset?` | OpenSubsonic uses `search3`; `search2` legacy, `search` returns 410. |
 | Lyrics (by id) | `getLyricsBySongId` | `id`, `enhanced?` | Requires `songLyrics` extension. See §3. |
 | Lyrics (legacy) | `getLyrics` | `artist?`, `title?` | Fallback. Returns plain `lyrics` only. |
@@ -63,8 +62,7 @@ All are Navidrome-compatible Subsonic v1.16.1 operations (Navidrome compat doc +
 | User | `getUser` | `username?` | Returns authenticated user; roles reflect server capabilities. |
 
 Explicitly **not implemented by Navidrome** (returns 501/410): podcasts, `search` (legacy),
-videos/captions, chat, and user create/update/delete. Chat is the one Auralis calls anyway (it works on other servers):
-the 410 is read as "this server has no chat", once per session.
+videos/captions, chat, and user create/update/delete.
 
 ### ID handling
 Navidrome IDs are **opaque strings** (MD5/UUID). Never cast to number; never parse structure.

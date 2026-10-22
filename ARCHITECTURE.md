@@ -128,34 +128,16 @@ it can never delay or fail playback.
 ### Social (sidebar / phone header → Social)
 - **What the server really offers** (checked against Navidrome's `server/subsonic/api.go` and `core/scrobbler`):
   `getNowPlaying` lists every user's current track (sessions expire at the end of the track; no per-user privacy on the
-  server side), and the Subsonic chat room (`getChatMessages`/`addChatMessage`) exists on some servers (Airsonic) but
-  Navidrome answers **410 Gone**. No Subsonic server has friends, friend requests, presence or direct messages, and
+  server side). No Subsonic server has friends, friend requests, presence or messages, and
   `getUsers` returns only the caller. Nothing beyond that is invented: no extra backend, no third-party service.
-- **Data:** `api/subsonic/endpoints.ts` maps and validates the three endpoints. Activity is a TanStack query
-  (`features/social/data.ts`, refetched every 30 s while a Social view is mounted and the window is visible). The chat
-  lives in `state/social.ts`: messages (capped), status (`unknown → ready | unsupported | error`), and the last-read time
-  per account in IndexedDB. It resets when the account changes. "Unsupported" (HTTP 404/405/410/501, code 70, non-Subsonic
-  page) is sticky for the session, so a Navidrome server costs one request per session.
-- **Polling:** both shells poll the chat every 60 s while visible (for the unread badge), an open conversation every
-  10 s. Requests are fire-and-forget and never touch playback state; nothing in Social imports the engine.
-- **Unread** = other people's messages newer than the last-read time; on an account's first load the existing backlog
-  counts as read. Sending waits for the server, then refetches: nothing is shown as sent until the server has it.
+- **Data:** `api/subsonic/endpoints.ts` maps and validates its endpoints. Activity is a TanStack query
+  (`features/social/data.ts`, refetched every 30 s while a Social view is mounted and the window is visible).
+- **Polling:** requests are fire-and-forget and never touch playback state; nothing in Social imports the engine.
 - **Privacy:** the "now playing" ping (`scrobble submission=false`) is what puts you in everyone's `getNowPlaying`, so it
-  now has its own opt-in, `shareListening` (default **off**), separate from `reportPlays` (play counts only). Chat text
-  travels in the query string like every Subsonic parameter (the API has no POST for it): it can appear in server logs.
-- **UI:** one implementation for both apps (`features/social/Social.tsx`): Activity, Chat (conversation list + thread;
-  one server room today, ids leave room for direct/group conversations), People (search) and Profiles. The web app
+  now has its own opt-in, `shareListening` (default **off**), separate from `reportPlays` (play counts only).
+- **UI:** one implementation for both apps (`features/social/Social.tsx`): Activity, People (search) and Profiles. The web app
   routes it under `/social` with pill tabs; the phone UI wraps the same sections in its own headers and chips
   (`mobile/pages.tsx`). Avatars are initials: other users' avatars aren't available to ordinary accounts.
-- **Chat server (direct and group messages):** a second, optional source next to the Subsonic room, served by the
-  self-hosted `server/chat` (its own accounts, never the Subsonic login; design in `CHAT.md`). Client code:
-  `api/chat/` (URL policy, validating HTTP client, framework-free `ChatSocket` with first-frame auth and jittered
-  backoff), `state/chatServer.ts` (address, `instanceId`, chat session, connection) and `state/chat.ts` (conversations,
-  messages, outbox, resync), stored in its own IndexedDB database `auralis-chat`. Switching chat servers deletes only that
-  database; the Subsonic session, settings, queue and caches in `auralis` are untouched, and signing out of one server
-  never signs out of the other. Wire types live in `shared/chat-protocol` (type-only). UI: `features/social/ChatServer.tsx`
-  (list source, thread at `/social/chat/c/:id`, new message/group, group info) and `features/settings/ChatServerSection.tsx`
-  (web and phone settings). The socket only pushes; sending is REST with an idempotency key.
 
 ### Lyrics (M4, extended for Spicy Lyrics)
 0. On track change, `useLyrics` first settles the track's **Spotify identity** (only with *External lookups* on): a
@@ -233,10 +215,7 @@ it can never delay or fail playback.
   `web/e2e/lyrics-auto.spec.ts` check they cannot reach the bundle or responses.
 - **No retry loops:** the HTTP client never retries; TanStack Query is configured with `retry: false`. The one exception
   is server-side: a Spotify search answered `401` is retried once with a fresh token. Failures surface
-  with a manual "Try again" (or "Sign in again" for rejected credentials). Second exception: the chat server outbox
-  (`state/chat.ts`) resends a message that is waiting for the connection when the socket reconnects or the browser comes
-  back online, at most 5 attempts, then shows it as failed with Retry/Discard. That is safe only because sends carry a
-  `clientMessageId` the server de-duplicates on.
+  with a manual "Try again" (or "Sign in again" for rejected credentials).
 
 ## 7. Verified vs assumed
 

@@ -3,9 +3,7 @@ import { Link, Outlet, useParams, useSearchParams } from 'react-router'
 import { getAlbum, getAlbumList2, getArtist, getArtists, getPlaylist, getPlaylists, getStarred2, search3, type AlbumListType } from '@auralis/ui/api/subsonic/endpoints'
 import { Boundary, Cover, useAlbumSongs } from '@auralis/ui/features/library/components'
 import { useLibraryQuery, usePagedQuery } from '@auralis/ui/features/library/queries'
-import { useUnread } from '@auralis/ui/features/social/data'
-import { Badge, ChatThread, Profile, SocialTabs } from '@auralis/ui/features/social/Social'
-import { ConversationThread, useConversationTitle } from '@auralis/ui/features/social/ChatServer'
+import { Profile, SocialTabs } from '@auralis/ui/features/social/Social'
 import { formatDuration } from '@auralis/ui/lib/format'
 import { useAuth } from '@auralis/ui/state/auth'
 import { Icon } from '@auralis/ui/ui/Icon'
@@ -21,13 +19,11 @@ function greeting(hour = new Date().getHours()) {
   return hour < 5 ? 'Good night' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 }
 
-/** Top-left on every tab's page: opens Social, with a dot while chat messages are unread. */
+/** Top-left on every tab's page: opens Social. */
 function SocialLink() {
-  const unread = useUnread()
   return (
-    <Link to="/social" className="m-round m-round--plain m-social" aria-label={unread ? `Social, ${unread} unread` : 'Social'}>
+    <Link to="/social" className="m-round m-round--plain m-social" aria-label="Social">
       <Icon name="people" size={24} />
-      <Badge count={unread} />
     </Link>
   )
 }
@@ -447,33 +443,6 @@ export function SocialPage() {
       </header>
       <SocialTabs />
       <Outlet />
-    </div>
-  )
-}
-
-export function SocialThreadPage() {
-  return (
-    <div className="m-page social social--thread">
-      <header className="m-top">
-        <BackButton />
-        <h1 className="m-h1">Server chat</h1>
-      </header>
-      <ChatThread />
-    </div>
-  )
-}
-
-/** A chat server conversation: its title in the header, the thread below. */
-export function ChatServerThreadPage() {
-  const { conversationId } = useParams()
-  const title = useConversationTitle(conversationId)
-  return (
-    <div className="m-page social social--thread">
-      <header className="m-top">
-        <BackButton />
-        <h1 className="m-h1">{title}</h1>
-      </header>
-      <ConversationThread compact />
     </div>
   )
 }

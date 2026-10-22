@@ -8,9 +8,8 @@ import { Icon, type IconName } from '@auralis/ui/ui/Icon'
 import MiniPlayer from './MiniPlayer'
 import Player from './Player'
 import { useDynamicColor } from './parts'
-import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage, SocialPage, SocialProfilePage, SocialThreadPage, ChatServerThreadPage } from './pages'
-import { Activity, ConversationList, People } from '@auralis/ui/features/social/Social'
-import { CHAT_POLL_BACKGROUND_MS, useChatConnection, useChatPolling } from '@auralis/ui/features/social/data'
+import { AlbumPage, ArtistPage, BrowsePage, Home, Library, LikedPage, PlaylistPage, SearchPage, SocialPage, SocialProfilePage } from './pages'
+import { Activity, People } from '@auralis/ui/features/social/Social'
 import SettingsPage from './SettingsPage'
 import { ShownLocation, usePlayerPresence, useShownLocation, useTransitionedLocation } from './transitions'
 
@@ -29,8 +28,6 @@ function useLyricSize() {
 }
 
 function Shell() {
-  useChatPolling(CHAT_POLL_BACKGROUND_MS)
-  useChatConnection()
   const { pathname } = useShownLocation()
   return (
     <div className="m-app">
@@ -94,11 +91,8 @@ function SignedIn() {
           <Route path="/social" element={<SocialPage />}>
             <Route index element={<Activity />} />
             <Route path="people" element={<People />} />
-            <Route path="chat" element={<ConversationList />} />
           </Route>
           <Route path="/social/people/:name" element={<SocialProfilePage />} />
-          <Route path="/social/chat/:room" element={<SocialThreadPage />} />
-          <Route path="/social/chat/c/:conversationId" element={<ChatServerThreadPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>

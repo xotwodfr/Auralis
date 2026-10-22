@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { playing, seriousViolations, trackAudio } from '../../shared/ui/testing/e2e-helpers'
 
 // The phone UI in a real browser against the mock server (the same fixtures the web suite uses): "alex" is playing
-// Stayin Alive now and the chat room starts with one message from alex.
+// Stayin Alive now.
 
 const MOCK = 'http://127.0.0.1:4699'
 
@@ -47,21 +47,10 @@ for (const [label, viewport] of [['portrait', { width: 390, height: 844 }], ['la
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
     expect(await seriousViolations(page)).toEqual([])
 
-    await page.getByRole('navigation', { name: 'Social' }).getByRole('link', { name: /Chat/ }).click()
-    await page.getByRole('link', { name: /Everyone on/ }).click()
-    const field = page.getByRole('textbox', { name: 'Message everyone on this server' })
-    await expect(field).toBeVisible()
-    // The composer stays above the mini-player and tab bar.
-    const composer = (await field.boundingBox())!
-    const dock = (await page.locator('.m-dock').boundingBox())!
-    expect(composer.y + composer.height).toBeLessThanOrEqual(dock.y + 1)
-    await field.fill('From the phone')
-    await page.getByRole('button', { name: 'Send' }).click()
-    await expect(page.getByRole('log', { name: 'Messages' })).toContainText('From the phone')
+    await page.getByRole('navigation', { name: 'Social' }).getByRole('link', { name: 'People' }).click()
+    await expect(page.getByRole('list', { name: 'People' })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
 
-    await page.getByRole('button', { name: 'Back' }).click()
-    await expect(page.getByRole('link', { name: /Everyone on/ })).toBeVisible()
     const after = (await playing(page))!
     expect(after.src).toBe(before.src)
     expect(after.paused).toBe(false)

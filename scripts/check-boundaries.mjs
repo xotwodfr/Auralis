@@ -8,10 +8,8 @@ const repo = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
 // A directory's own files are always fine; this lists what else it may import from.
 const ALLOWED = {
-  'shared/ui': ['shared/chat-protocol'],
-  'shared/chat-protocol': [],
+  'shared/ui': [],
   server: [],
-  'server/chat': ['shared/chat-protocol'],
   web: ['shared/ui', 'server'],
   tauri: ['shared/ui', 'server'],
   android: ['shared/ui', 'server'],
@@ -27,7 +25,6 @@ const walk = (dir) =>
     return statSync(p).isDirectory() ? walk(p) : SOURCE.test(f) ? [p] : []
   })
 
-// Longest match wins: server/chat is its own package, not part of server.
 const owner = (abs) =>
   Object.keys(ALLOWED)
     .filter((d) => abs === join(repo, d) || abs.startsWith(join(repo, d) + sep))

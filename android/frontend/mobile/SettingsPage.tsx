@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { LyricsServerForm, spicyText, useAccountActions } from '@auralis/ui/features/settings/Settings'
-import { ChatServerSection } from '@auralis/ui/features/settings/ChatServerSection'
 import { useLyricsBackend } from '@auralis/ui/features/lyrics/useLyricsBackend'
 import { useAuth } from '@auralis/ui/state/auth'
 import { MAX_CROSSFADE_S, useSettings, type LyricSize, type StreamQuality } from '@auralis/ui/state/settings'
@@ -167,12 +166,6 @@ export default function SettingsPage() {
           <Row label="Share what I'm playing" hint="Everyone on your server can see it in Social">
             <Switch label="Share what I'm playing" checked={settings.shareListening} onChange={settings.setShareListening} />
           </Row>
-        </Section>
-
-        <Section icon="send" title="Chat" summary="Chat server and account">
-          <div className="m-set__row m-set__row--stack m-set__form">
-            <ChatServerSection />
-          </div>
         </Section>
 
         <Section icon="queue" title="Storage" summary={used === null ? 'Cached lyrics and matches' : `${formatBytes(used)} used on this device`}>
